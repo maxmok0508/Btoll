@@ -32,7 +32,10 @@ struct CodexDashboardView: View {
     var temperatureOnly = false
     var onHorizontalHover: ((Bool) -> Void)? = nil
     @State private var manualRPM: Double = 5000
+    @EnvironmentObject private var vm: DynamicIslandViewModel
     @State private var selectedPage: Int? = 0
+    @State private var showCoreDetails=false
+    @State private var temperatureHeights:[Int:CGFloat]=[:]
     @State private var data: DashboardData?
     @State private var error: String?
     private let mint = Color(red: 0.39, green: 0.87, blue: 0.68)
@@ -66,9 +69,9 @@ struct CodexDashboardView: View {
                 ScrollView(.horizontal) {
                     HStack(alignment: .top, spacing: 0) {
                         if temperatureOnly {
-                            temperatureOverview.frame(width:geo.size.width,alignment:.topLeading).id(0)
-                            coreSensorsPanel.frame(width:geo.size.width,alignment:.topLeading).id(1)
-                            fanPanel.frame(width:geo.size.width,alignment:.topLeading).id(2)
+                            ScrollView(.vertical) { temperatureOverview.background(BtollPageMeasure(page:0,onHeight:{ recordTemperatureHeight($0,page:0) })) }.scrollIndicators(.visible).frame(width:geo.size.width,height:geo.size.height).id(0)
+                            ScrollView(.vertical) { coreSensorsPanel.background(BtollPageMeasure(page:1,onHeight:{ recordTemperatureHeight($0,page:1) })) }.scrollIndicators(.visible).frame(width:geo.size.width,height:geo.size.height).id(1)
+                            ScrollView(.vertical) { fanPanel.background(BtollPageMeasure(page:2,onHeight:{ recordTemperatureHeight($0,page:2) })) }.scrollIndicators(.visible).frame(width:geo.size.width,height:geo.size.height).id(2)
                         } else {
                             VStack(alignment:.leading,spacing:12) {
                                 quotaPanel
@@ -91,6 +94,9 @@ struct CodexDashboardView: View {
         .environment(\.colorScheme, .dark)
         .onHover { onHorizontalHover?($0) }
         .onDisappear { onHorizontalHover?(false) }
+        .onChange(of:selectedPage) { _,value in
+            if temperatureOnly { vm.setMonitorContentHeight((temperatureHeights[value ?? 0] ?? 250)+110) }
+        }
         .task {
             while !Task.isCancelled {
                 load()
@@ -99,6 +105,17 @@ struct CodexDashboardView: View {
         }
     }
 
+    private func recordTemperatureHeight(_ height:CGFloat,page index:Int) {
+        guard temperatureOnly else { return }
+        temperatureHeights[index]=height
+        if selectedPage == index { vm.setMonitorContentHeight(height+110) }
+    }
+    private func toggleCoreDetails() {
+        withAnimation(.easeInOut(duration:0.2)) {
+            showCoreDetails.toggle()
+            vm.setMonitorContentHeight(showCoreDetails ? 1600 : 380)
+        }
+    }
     private func load() {
         let url = FileManager.default.homeDirectoryForCurrentUser.appendingPathComponent("Library/Application Support/AtollCodexBridge/dashboard.json")
         do { data = try JSONDecoder().decode(DashboardData.self, from: Data(contentsOf: url)); error = nil }
@@ -181,8 +198,12 @@ struct CodexDashboardView: View {
     private var temperatureOverview: some View {
         VStack(alignment: .leading, spacing: 20) {
             HStack(spacing: 20) {
-                thermalStat("CPU 核心平均", data?.coreTemperatures?.cpuAverage)
-                thermalStat("CPU 核心最高", data?.coreTemperatures?.cpuMaximum)
+                Button { toggleCoreDetails() } label: {
+                    thermalStat("CPU 核心平均", data?.coreTemperatures?.cpuAverage)
+                }.buttonStyle(.plain)
+                Button { toggleCoreDetails() } label: {
+                    thermalStat("CPU 核心最高", data?.coreTemperatures?.cpuMaximum)
+                }.buttonStyle(.plain)
                 thermalStat("GPU 平均", data?.coreTemperatures?.gpuAverage)
             }
             HStack {
@@ -191,6 +212,10 @@ struct CodexDashboardView: View {
                 Spacer()
                 Text("AppleSMC · 实时采集").font(.system(size:10)).foregroundStyle(.white.opacity(0.4))
             }
+            Button { toggleCoreDetails() } label: {
+                HStack { Text(showCoreDetails ? "收起核心温度" : "展开核心温度");Spacer();Image(systemName:showCoreDetails ? "chevron.up" : "chevron.down") }.font(.system(size:11)).foregroundStyle(.white.opacity(0.65)).contentShape(Rectangle())
+            }.buttonStyle(.plain)
+            if showCoreDetails { coreSensorsPanel }
             Text("核心平均与最高值由本机核心区域传感器的实时读数计算。").font(.system(size:10)).foregroundStyle(.white.opacity(0.4))
         }.padding(18).background(.white.opacity(0.045),in:RoundedRectangle(cornerRadius:14))
     }
@@ -199,10 +224,8 @@ struct CodexDashboardView: View {
         VStack(alignment:.leading,spacing:10) {
             LazyVGrid(columns:Array(repeating:GridItem(.flexible(),spacing:8),count:6),spacing:8) {
                 ForEach(data?.coreTemperatures?.sensors.filter { $0.group == "CPU" } ?? []) { sensor in
-                    VStack(alignment:.leading,spacing:5) {
-                        Text(sensorLabel(sensor.name)).font(.system(size:10)).foregroundStyle(.white.opacity(0.45))
-                        Text(String(format:"%.1f°",sensor.value)).font(.system(size:20,weight:.medium,design:.rounded)).monospacedDigit()
-                    }.frame(maxWidth:.infinity,alignment:.leading).padding(10).background(.white.opacity(0.045),in:RoundedRectangle(cornerRadius:9)).help(sensor.name + " · " + sensor.key)
+                    BtollTemperatureRing(title:sensorLabel(sensor.name),value:sensor.value,size:62)
+                        .padding(10).background(.white.opacity(0.045),in:RoundedRectangle(cornerRadius:12)).help(sensor.name+" · "+sensor.key)
                 }
             }
             Text("本机 SMC 实测 · 一个核心区域可能有多个温度传感器").font(.system(size:10)).foregroundStyle(.white.opacity(0.35))
@@ -305,8 +328,8 @@ struct CodexDashboardView: View {
         Task { @MainActor in await BsstollFanController.setFan(mode) }
     }
 
-    private func thermalStat(_ title: String, _ value: Double?) -> some View {
-        VStack(alignment: .leading, spacing: 8) { caption(title); Text(value.map { String(format: "%.1f°", $0) } ?? "—").font(.system(size: 27, weight: .medium, design: .rounded)).monospacedDigit() }.frame(maxWidth: .infinity, alignment: .leading)
+    private func thermalStat(_ title:String,_ value:Double?)->some View {
+        BtollTemperatureRing(title:title,value:stale ? nil : value)
     }
     private func mean(_ prefix: String) -> Double? { let values = data?.temperatures?.values.filter { $0.key.hasPrefix(prefix) && $0.value > 5 && $0.value < 125 }.map(\.value) ?? []; return values.isEmpty ? nil : values.reduce(0,+) / Double(values.count) }
     private func caption(_ text: String) -> some View { Text(text).font(.system(size: 10)).foregroundStyle(.white.opacity(0.45)) }

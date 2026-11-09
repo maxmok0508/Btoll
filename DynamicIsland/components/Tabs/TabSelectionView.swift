@@ -109,7 +109,6 @@ struct TabSelectionView: View {
         HStack(spacing: 24) {
             ForEach(Array(tabs.enumerated()), id: \.element.id) { idx, tab in
                 let isSelected = isSelected(tab)
-                let activeAccent = tab.accentColor ?? .white
 
                 // Render the tab button
                 TabButton(label: tab.label, icon: tab.icon, selected: isSelected) {
@@ -119,9 +118,9 @@ struct TabSelectionView: View {
                     coordinator.currentView = tab.view
                 }
                 .frame(height: 26)
-                .foregroundStyle(isSelected ? activeAccent : .gray)
+                .foregroundStyle(isSelected ? Color.white : Color.gray)
                 .background {
-                    if isSelected {
+                    if isSelected && tab.view != .extensionExperience {
                         Capsule()
                             .fill((tab.accentColor ?? Color(nsColor: .secondarySystemFill)).opacity(0.25))
                             .shadow(color: (tab.accentColor ?? .clear).opacity(0.4), radius: 8)

@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """Reproducible portable Btoll installer; never copies the builder's home data."""
-import argparse, hashlib, json, os, plistlib, shutil, subprocess, tarfile, urllib.request
+import argparse, hashlib, json, os, plistlib, re, shutil, subprocess, tarfile, urllib.request
 from pathlib import Path
 ROOT=Path(__file__).resolve().parents[1]
 WORK=ROOT/'.build.noindex'
@@ -38,7 +38,7 @@ def main():
     for name in files:h.update(name.encode());h.update((bridge/name).read_bytes())
     (bridge/'manifest.json').write_text(json.dumps({'buildID':'portable-'+h.hexdigest()[:20],'files':files},indent=2)+'\n')
     # Real parser tests and the same native installer used by the host.
-    run(bridge/'node','--test',ROOT/'portable/tests/dashboard.test.mjs',ROOT/'portable/tests/thermal.test.mjs')
+    run(bridge/'node','--test',ROOT/'portable/tests/dashboard.test.mjs',ROOT/'portable/tests/thermal.test.mjs',ROOT/'portable/tests/work-animation.test.mjs',ROOT/'portable/tests/codex-animation.test.mjs')
     run('xcrun','swiftc',ROOT/'DynamicIsland/components/Extensions/BsstollBridgeFiles.swift',ROOT/'portable/tests/native/main.swift','-o',WORK/'bridge-setup-test')
     test_home=WORK/'Clean User Home'
     if test_home.exists():shutil.rmtree(test_home)
@@ -46,6 +46,8 @@ def main():
     shutil.rmtree(test_home)
     run('xcrun','swiftc','-parse-as-library',ROOT/'DynamicIsland/managers/BtollSystemSampler.swift',ROOT/'portable/tests/system/main.swift','-o',WORK/'system-test')
     run(WORK/'system-test')
+    run('cmake','-S',ROOT/'portable/vendor/mediaremote-adapter','-B',WORK/'mediaremote-build','-DCMAKE_BUILD_TYPE=Release','-DCMAKE_OSX_DEPLOYMENT_TARGET=14.6')
+    run('cmake','--build',WORK/'mediaremote-build','--target','MediaRemoteAdapter','-j','4')
     if args.app:app=args.app.resolve()
     else:
         run('xcodebuild','-project',ROOT/'DynamicIsland.xcodeproj','-scheme','DynamicIsland','-configuration','Release','-derivedDataPath',WORK/'DerivedData','-disableAutomaticPackageResolution','ARCHS=arm64','MACOSX_DEPLOYMENT_TARGET=14.6','CODE_SIGN_IDENTITY=-','CODE_SIGNING_ALLOWED=YES','build')
@@ -63,6 +65,28 @@ def main():
     run('pkgbuild','--root',fanroot,'--scripts',scripts,'--identifier','local.bsstoll.fan-service','--version','1.1.0','--install-location','/',WORK/'bsstoll-fan-service.pkg')
     copy(fanroot,payload)
     target=payload/'Applications/Btoll.app';copy(app,target)
+    framework=target/'Contents/Resources/MediaRemoteAdapter.framework'
+    if framework.exists():shutil.rmtree(framework)
+    copy(WORK/'mediaremote-build/MediaRemoteAdapter.framework',framework)
+    copy(ROOT/'portable/vendor/mediaremote-adapter/bin/mediaremote-adapter.pl',target/'Contents/Resources/mediaremote-adapter.pl')
+    for source,name in [(ROOT/'LICENSE','GPL-3.0'),(ROOT/'NOTICE','NOTICE'),(ROOT/'THIRD_PARTY_NOTICES.md','THIRD_PARTY_NOTICES.md'),(ROOT/'portable/vendor/mediaremote-adapter/LICENSE','MediaRemoteAdapter-BSD-3-Clause')]:
+        copy(source,target/'Contents/Resources/Licenses'/name)
+    info_path=target/'Contents/Info.plist'
+    release_info=plistlib.loads(info_path.read_bytes())
+    release_info['CFBundleShortVersionString']=VERSION
+    release_info['CFBundleVersion']='1000'
+    info_path.write_bytes(plistlib.dumps(release_info))
+    # Validate every Mach-O, including prebuilt resources, before creating an installer.
+    for binary in target.rglob('*'):
+        if binary.is_symlink() or not binary.is_file():continue
+        with binary.open('rb') as stream:magic=stream.read(4)
+        if magic not in [b'\xcf\xfa\xed\xfe',b'\xca\xfe\xba\xbe',b'\xbe\xba\xfe\xca']:continue
+        commands=subprocess.check_output(['otool','-l',str(binary)],text=True)
+        for minimum in re.findall(r'minos\s+(\d+\.\d+(?:\.\d+)?)',commands):
+            version=tuple(map(int,minimum.split('.')))
+            if version+(0,)*(3-len(version))>(14,6,0):raise RuntimeError('Unsupported minimum OS: '+str(binary)+' '+minimum)
+        dependencies=subprocess.check_output(['otool','-L',str(binary)],text=True)
+        if '/opt/homebrew/' in dependencies or '/usr/local/' in dependencies:raise RuntimeError('External dependency: '+str(binary))
     # Strip builder metadata and signatures that are regenerated below.
     run('xattr','-cr',target)
     copy(bridge,target/'Contents/Resources/PortableBridge')

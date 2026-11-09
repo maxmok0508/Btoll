@@ -187,3 +187,10 @@ installed-manifest.json
 
 __pycache__/
 *.pyc
+
+!portable/vendor/mediaremote-adapter/CMakeLists.txt
+
+animation-preferences.json
+user-animations/
+
+!scripts/combine_work_animations.py

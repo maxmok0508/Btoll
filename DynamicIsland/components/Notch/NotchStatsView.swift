@@ -64,8 +64,8 @@ struct NotchStatsView: View {
     @EnvironmentObject private var vm: DynamicIslandViewModel
     @State private var page: Int? = 0
     @State private var scrollToken = UUID()
-    @State private var detail: ProcessRankingType = .cpu
-    @State private var showingDetail = false
+    @State private var expanded: Set<String> = []
+    @State private var pageHeights: [Int:CGFloat] = [:]
     @State private var systemSnapshot = BtollSystemSnapshot()
     @State private var sampler = BtollSystemSampler()
     private let mint = Color(red:0.39,green:0.87,blue:0.68)
@@ -90,14 +90,14 @@ struct NotchStatsView: View {
                     }.buttonStyle(.plain)
                 }
                 Spacer()
-                Text("左右切页 · 上下查看详情").font(.system(size:10)).foregroundStyle(.white.opacity(0.3))
+                Text("左右切页 · 点击展开").font(.system(size:10)).foregroundStyle(.white.opacity(0.3))
             }
             GeometryReader { geo in
                 ScrollView(.horizontal) {
                     HStack(alignment:.top,spacing:0) {
-                        ScrollView(.vertical) { overview }.scrollIndicators(.visible).frame(width:geo.size.width,height:geo.size.height).id(0)
-                        ScrollView(.vertical) { processors }.scrollIndicators(.visible).frame(width:geo.size.width,height:geo.size.height).id(1)
-                        ScrollView(.vertical) { memoryAndIO }.scrollIndicators(.visible).frame(width:geo.size.width,height:geo.size.height).id(2)
+                        ScrollView(.vertical) { overview.background(BtollPageMeasure(page:0,onHeight:{ recordHeight($0,page:0) })) }.scrollIndicators(.visible).frame(width:geo.size.width,height:geo.size.height).id(0)
+                        ScrollView(.vertical) { processors.background(BtollPageMeasure(page:1,onHeight:{ recordHeight($0,page:1) })) }.scrollIndicators(.visible).frame(width:geo.size.width,height:geo.size.height).id(1)
+                        ScrollView(.vertical) { memoryAndIO.background(BtollPageMeasure(page:2,onHeight:{ recordHeight($0,page:2) })) }.scrollIndicators(.visible).frame(width:geo.size.width,height:geo.size.height).id(2)
                     }.scrollTargetLayout()
                 }.scrollIndicators(.hidden).scrollTargetBehavior(.paging).scrollPosition(id:$page)
             }
@@ -113,29 +113,42 @@ struct NotchStatsView: View {
                 }
             }
             .onHover { vm.setScrollGestureSuppression($0,token:scrollToken) }
-            .onDisappear { vm.setScrollGestureSuppression(false,token:scrollToken); vm.isStatsPopoverActive = false; showingDetail = false }
-            .onChange(of:showingDetail) { _, value in vm.isStatsPopoverActive = value }
-            .popover(isPresented:$showingDetail) {
-                RankedProcessPopover(rankingType:detail,onHoverChange:{ vm.isStatsPopoverActive = showingDetail || $0 })
-                    .foregroundStyle(.primary)
-            }
+            .onDisappear { vm.setScrollGestureSuppression(false,token:scrollToken) }
+            .onChange(of:page) { _,value in vm.setMonitorContentHeight((pageHeights[value ?? 0] ?? 250)+110) }
     }
     private var overview: some View {
         VStack(spacing:12) {
             HStack(spacing:12) {
-                Button { openDetail(.cpu) } label: { gaugeCard("CPU",value:ready ? stats.cpuUsage : nil,color:mint,subtitle:"点击查看进程与负载") }.buttonStyle(.plain)
-                Button { openDetail(.gpu) } label: { gaugeCard("GPU",value:gpuValue,color:.cyan,subtitle:"点击查看 GPU 详情") }.buttonStyle(.plain)
-                Button { openDetail(.memory) } label: { gaugeCard("内存",value:ready ? stats.memoryUsage : nil,color:.purple,subtitle:"点击查看内存详情") }.buttonStyle(.plain)
+                Button { toggle("cpu") } label: { gaugeCard("CPU",value:ready ? stats.cpuUsage : nil,color:mint,subtitle:expanded.contains("cpu") ? "收起详情" : "点击展开") }.buttonStyle(.plain)
+                Button { toggle("gpu") } label: { gaugeCard("GPU",value:gpuValue,color:.cyan,subtitle:expanded.contains("gpu") ? "收起详情" : "点击展开") }.buttonStyle(.plain)
+                Button { toggle("memory") } label: { gaugeCard("内存",value:ready ? stats.memoryUsage : nil,color:.purple,subtitle:expanded.contains("memory") ? "收起详情" : "点击展开") }.buttonStyle(.plain)
             }
             HStack(spacing:12) {
                 mini("逻辑核心",ready ? String(stats.cpuCoreUsage.count) : "—")
                 mini("1 分钟负载",ready ? String(format:"%.2f",stats.cpuLoadAverage.oneMinute) : "—")
                 mini("系统已运行",uptimeText)
             }.padding(14).background(.white.opacity(0.045),in:RoundedRectangle(cornerRadius:12))
-            BtollEnergyCard(snapshot:systemSnapshot,coreTemperature:stats.cpuTemperature.celsius)
+            if expanded.contains("cpu") { processorDetails }
+            if expanded.contains("gpu") { gpuDetails }
+            if expanded.contains("memory") { memoryDetails }
+            disclosure("电池、电源与温度",key:"power") { BtollEnergyCard(snapshot:systemSnapshot,coreTemperature:stats.cpuTemperature.celsius) }
         }.padding(.bottom,6)
     }
     private var processors: some View {
+        VStack(spacing:12) {
+            disclosure("CPU 核心与负载",key:"cpu") { processorDetails }
+            disclosure("GPU 详情",key:"gpu") { gpuDetails }
+        }
+    }
+    private var gpuDetails: some View {
+        VStack(spacing:12) {
+            ForEach(stats.gpuDevices) { gpu in
+                infoBlock(gpu.formattedVendorModel,rows:[("占用率",optionalPercent(gpu.utilization)),("渲染 / 平铺",optionalPercent(gpu.renderUtilization)+" / "+optionalPercent(gpu.tilerUtilization)),("温度",gpu.temperature.map { String(format:"%.1f°C",$0) } ?? "不可用")])
+            }
+            if stats.gpuDevices.isEmpty { infoBlock("GPU",rows:[("状态","暂无设备明细")]) }
+        }
+    }
+    private var processorDetails: some View {
         VStack(alignment:.leading,spacing:12) {
             HStack(spacing:12) {
                 infoBlock("CPU 分配",rows:[("用户",percent(stats.cpuBreakdown.user)),("系统",percent(stats.cpuBreakdown.system)),("空闲",percent(stats.cpuBreakdown.idle))])
@@ -161,19 +174,19 @@ struct NotchStatsView: View {
                 }
             }.padding(16).background(.white.opacity(0.045),in:RoundedRectangle(cornerRadius:14))
             infoBlock("CPU 频率",rows:[("整体",ghz(stats.cpuFrequency?.overallGHz)),("能效核心",ghz(stats.cpuFrequency?.eCoreGHz)),("性能核心",ghz(stats.cpuFrequency?.pCoreGHz))])
-            if stats.gpuDevices.isEmpty {
-                infoBlock("GPU",rows:[("采集状态","暂无设备明细")])
-            } else {
-                ForEach(stats.gpuDevices) { gpu in
-                    infoBlock(gpu.formattedVendorModel,rows:[("占用率",gpu.utilization.map { String(format:"%.1f%%",$0) } ?? "暂无数据"),("渲染 / 平铺",optionalPercent(gpu.renderUtilization)+" / "+optionalPercent(gpu.tilerUtilization)),("核心 / 频率",(gpu.cores.map(String.init) ?? "—")+" / "+(gpu.coreClock.map { "\($0) MHz" } ?? "—"))])
-                }
-            }
             BtollProcessList(processes:stats.allProcesses)
-            detailButton("处理器详细面板",type:.cpu)
+
         }.padding(.bottom,6)
     }
     private var memoryAndIO: some View {
-        VStack(alignment:.leading,spacing:12) {
+        VStack(spacing:12) {
+            disclosure("内存与进程",key:"memory") { memoryDetails }
+            disclosure("网络 · 网卡与应用",key:"network") { networkDetails }
+            disclosure("磁盘 · 卷与读写排行",key:"disk") { diskDetails }
+        }.padding(.bottom,6)
+    }
+    private var memoryDetails: some View {
+        VStack(spacing:12) {
             HStack(alignment:.top,spacing:12) {
                 VStack(spacing:9) {
                     ring(ready ? stats.memoryUsage : nil,color:.purple,size:84,lineWidth:8,fontSize:22)
@@ -190,18 +203,26 @@ struct NotchStatsView: View {
                 mini("活跃内存",bytes(stats.memoryBreakdown.activeBytes))
                 mini("非活跃内存",bytes(stats.memoryBreakdown.inactiveBytes))
             }.padding(14).background(.white.opacity(0.045),in:RoundedRectangle(cornerRadius:12))
-            detailButton("内存详细面板",type:.memory)
-            Button { openDetail(.network) } label: {
-                rateCard("网络 · 点击查看详情",left:"下载",leftValue:stats.networkDownloadString,right:"上传",rightValue:stats.networkUploadString)
-            }.buttonStyle(.plain)
+            BtollProcessList(processes:stats.allProcesses,initialSorting:1)
+        }
+    }
+    private var networkDetails: some View {
+        VStack(spacing:12) {
+            Group {
+                rateCard("网络",left:"下载",leftValue:stats.networkDownloadString,right:"上传",rightValue:stats.networkUploadString)
+            }
             BtollTrafficList(title:"应用网络流量",items:systemSnapshot.network,processes:stats.allProcesses,network:true,available:systemSnapshot.networkAvailable)
             infoBlock("网络采集累计",rows:[("下载",megabytes(stats.networkTotals.downloadedMB)),("上传",megabytes(stats.networkTotals.uploadedMB))])
             ForEach(stats.networkInterfaces.filter { $0.isActive }) { interface in
                 infoBlock(interface.displayName+" · "+interface.name,rows:[("下载",StatsFormatting.throughput(interface.currentDownload)),("上传",StatsFormatting.throughput(interface.currentUpload))])
             }
-            Button { openDetail(.disk) } label: {
-                rateCard("磁盘 I/O · 点击查看详情",left:"读取",leftValue:stats.diskReadString,right:"写入",rightValue:stats.diskWriteString)
-            }.buttonStyle(.plain)
+        }
+    }
+    private var diskDetails: some View {
+        VStack(spacing:12) {
+            Group {
+                rateCard("磁盘 I/O",left:"读取",leftValue:stats.diskReadString,right:"写入",rightValue:stats.diskWriteString)
+            }
             BtollTrafficList(title:"谁在写入磁盘",items:systemSnapshot.disk,processes:stats.allProcesses,network:false,available:!systemSnapshot.disk.isEmpty)
             infoBlock("磁盘采集累计",rows:[("读取",megabytes(stats.diskTotals.readMB)),("写入",megabytes(stats.diskTotals.writtenMB))])
             ForEach(stats.diskDevices) { disk in
@@ -210,14 +231,26 @@ struct NotchStatsView: View {
                     infoBlock(disk.name,rows:[("已用 / 总量",bytes(disk.usedBytes)+" / "+bytes(disk.totalBytes)),("剩余",bytes(disk.freeBytes))])
                 }.padding(10).background(.white.opacity(0.025),in:RoundedRectangle(cornerRadius:12))
             }
-            Text("部分内存分类相互重叠，请勿直接相加。频率或 GPU 项目未公开时显示暂无数据。").font(.system(size:10)).foregroundStyle(.white.opacity(0.35))
-        }.padding(.bottom,6)
+        }
     }
-    private func openDetail(_ type:ProcessRankingType) { detail = type; vm.isStatsPopoverActive = true; showingDetail = true }
-    private func detailButton(_ title:String,type:ProcessRankingType) -> some View {
-        Button { openDetail(type) } label: {
-            HStack { Text(title); Spacer(); Image(systemName:"arrow.up.right") }.font(.system(size:11,weight:.medium)).foregroundStyle(mint).padding(12)
-        }.buttonStyle(.plain).background(mint.opacity(0.07),in:RoundedRectangle(cornerRadius:10))
+    private func recordHeight(_ height:CGFloat,page index:Int) {
+        pageHeights[index]=height
+        if page == index { vm.setMonitorContentHeight(height+110) }
+    }
+    private func toggle(_ key:String) {
+        withAnimation(.easeInOut(duration:0.2)) {
+            if expanded.contains(key) { expanded.remove(key) } else { expanded.insert(key) }
+            let added:CGFloat=expanded.contains(key) ? (key == "gpu" ? 160 : 1200) : 0
+            vm.setMonitorContentHeight(380+added)
+        }
+    }
+    private func disclosure<C:View>(_ title:String,key:String,@ViewBuilder content:()->C)->some View {
+        VStack(spacing:12) {
+            Button { toggle(key) } label: {
+                HStack { Text(title).font(.system(size:12,weight:.medium));Spacer();Image(systemName:expanded.contains(key) ? "chevron.up" : "chevron.down").font(.system(size:10,weight:.semibold)).foregroundStyle(.white.opacity(0.5)) }.padding(15).contentShape(Rectangle())
+            }.buttonStyle(.plain).background(.white.opacity(0.045),in:RoundedRectangle(cornerRadius:12))
+            if expanded.contains(key) { content() }
+        }
     }
     private func mini(_ title:String,_ value:String) -> some View {
         VStack(alignment:.leading,spacing:5) { Text(title).font(.system(size:10)).foregroundStyle(.white.opacity(0.45)); Text(value).font(.system(size:13,weight:.medium,design:.rounded)).monospacedDigit() }.frame(maxWidth:.infinity,alignment:.leading)

@@ -8,8 +8,11 @@ struct BtollEnergyCard: View {
     var body: some View {
         VStack(alignment:.leading,spacing:14) {
             Text("电源与温度").font(.system(size:12,weight:.semibold)).foregroundStyle(mint)
+            HStack(spacing:20) {
+                BtollTemperatureRing(title:"CPU 核心平均",value:coreTemperature,size:72)
+                if snapshot.power.present { BtollTemperatureRing(title:"电池温度",value:snapshot.power.temperature,size:72) }
+            }
             LazyVGrid(columns:[GridItem(.flexible()),GridItem(.flexible()),GridItem(.flexible())],alignment:.leading,spacing:14) {
-                metric("CPU 核心平均",coreTemperature.map { String(format:"%.1f°C",$0) } ?? "不可用")
                 metric("系统热压力",thermalText)
                 metric("低电量模式",ProcessInfo.processInfo.isLowPowerModeEnabled ? "已开启" : "关闭")
                 if snapshot.power.present {
@@ -18,7 +21,6 @@ struct BtollEnergyCard: View {
                     metric("电池端功率",snapshot.power.batteryWatts.map { String(format:"%.1f W",abs($0)) } ?? "不可用")
                     metric("电池健康",snapshot.power.health.map { String(format:"%.0f%%",$0) } ?? "不可用")
                     metric("循环次数",snapshot.power.cycles.map(String.init) ?? "不可用")
-                    metric("电池温度",snapshot.power.temperature.map { String(format:"%.1f°C",$0) } ?? "不可用")
                 }
             }
             if snapshot.power.present {
@@ -63,6 +65,7 @@ struct BtollEnergyCard: View {
 struct BtollProcessList: View {
     let processes: [ProcessStats]
     @State private var query=""
+    var initialSorting=0
     @State private var sorting=0
     @State private var limit=20
     private var filtered: [ProcessStats] {
@@ -97,6 +100,7 @@ struct BtollProcessList: View {
             if filtered.count>limit { Button("显示更多（剩余 \(filtered.count-limit)）") { limit += 50 }.buttonStyle(.plain).font(.system(size:11)).foregroundStyle(.mint) }
             Text("进程 CPU 以单核 100% 计，多线程进程可以超过 100%。内存按可读取的驻留内存统计。").font(.system(size:10)).foregroundStyle(.white.opacity(0.35))
         }.padding(16).background(.white.opacity(0.045),in:RoundedRectangle(cornerRadius:14))
+            .onAppear { sorting=initialSorting }
             .onChange(of:query) { _,_ in limit=20 }.onChange(of:sorting) { _,_ in limit=20 }
     }
 }
@@ -150,4 +154,38 @@ struct BtollTrafficList: View {
         }.padding(16).background(.white.opacity(0.045),in:RoundedRectangle(cornerRadius:14))
     }
     private func rate(_ value:Double?)->String { guard let value else { return "—" };return ByteCountFormatter.string(fromByteCount:Int64(min(Double(Int64.max),max(0,value))),countStyle:.file)+"/s" }
+}
+
+struct BtollPageHeightKey:PreferenceKey {
+    static var defaultValue:[Int:CGFloat]=[:]
+    static func reduce(value:inout [Int:CGFloat],nextValue:()->[Int:CGFloat]) { value.merge(nextValue(),uniquingKeysWith:{ _,new in new }) }
+}
+struct BtollPageMeasure:View {
+    let page:Int
+    var onHeight:((CGFloat)->Void)? = nil
+    var body:some View {
+        GeometryReader { geo in
+            Color.clear.onAppear { onHeight?(geo.size.height) }
+                .onChange(of:geo.size.height) { _,height in onHeight?(height) }
+        }
+    }
+}
+struct BtollTemperatureRing:View {
+    let title:String
+    let value:Double?
+    var size:CGFloat=84
+    var body:some View {
+        let color:Color=(value ?? 0)>=90 ? .red : (value ?? 0)>=75 ? .orange : .mint
+        VStack(spacing:10) {
+            ZStack {
+                Circle().stroke(.white.opacity(0.08),lineWidth:7)
+                Circle().trim(from:0,to:min(1,max(0,(value ?? 0)/120))).stroke(color,style:StrokeStyle(lineWidth:7,lineCap:.round)).rotationEffect(.degrees(-90))
+                VStack(spacing:1) {
+                    Text(value.map { String(format:"%.1f",$0) } ?? "—").font(.system(size:size>70 ? 22 : 15,weight:.semibold,design:.rounded)).monospacedDigit()
+                    Text("°C").font(.system(size:9)).foregroundStyle(.white.opacity(0.45))
+                }
+            }.frame(width:size,height:size).padding(4)
+            Text(title).font(.system(size:10,weight:.medium)).foregroundStyle(.white.opacity(0.65)).lineLimit(2).multilineTextAlignment(.center)
+        }.frame(maxWidth:.infinity).help("温度环范围 0–120°C；数值为实测温度，不是占用率。 ").accessibilityLabel(title).accessibilityValue(value.map { String(format:"%.1f 摄氏度",$0) } ?? "不可用")
+    }
 }

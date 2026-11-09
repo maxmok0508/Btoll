@@ -1,0 +1,142 @@
+[
+  {
+    "id": "grok-working_a",
+    "name": "工作 A",
+    "file": "assets/animations/grok-working_a.json"
+  },
+  {
+    "id": "grok-working_b",
+    "name": "工作 B",
+    "file": "assets/animations/grok-working_b.json"
+  },
+  {
+    "id": "grok-working_c",
+    "name": "工作 C",
+    "file": "assets/animations/grok-working_c.json"
+  },
+  {
+    "id": "grok-working_d",
+    "name": "工作 D",
+    "file": "assets/animations/grok-working_d.json"
+  },
+  {
+    "id": "grok-working_e",
+    "name": "工作 E",
+    "file": "assets/animations/grok-working_e.json"
+  },
+  {
+    "id": "grok-working_f",
+    "name": "工作 F",
+    "file": "assets/animations/grok-working_f.json"
+  },
+  {
+    "id": "grok-idle_a",
+    "name": "待命 A",
+    "file": "assets/animations/grok-idle_a.json"
+  },
+  {
+    "id": "grok-idle_b",
+    "name": "待命 B",
+    "file": "assets/animations/grok-idle_b.json"
+  },
+  {
+    "id": "grok-idle_d",
+    "name": "待命 D",
+    "file": "assets/animations/grok-idle_d.json"
+  },
+  {
+    "id": "grok-streaming_a",
+    "name": "响应 A",
+    "file": "assets/animations/grok-streaming_a.json"
+  },
+  {
+    "id": "grok-streaming_b",
+    "name": "响应 B",
+    "file": "assets/animations/grok-streaming_b.json"
+  },
+  {
+    "id": "grok-streaming_c",
+    "name": "响应 C",
+    "file": "assets/animations/grok-streaming_c.json"
+  },
+  {
+    "id": "grok-done_a",
+    "name": "完成 A",
+    "file": "assets/animations/grok-done_a.json"
+  },
+  {
+    "id": "grok-done_b",
+    "name": "完成 B",
+    "file": "assets/animations/grok-done_b.json"
+  },
+  {
+    "id": "grok-done_c",
+    "name": "完成 C",
+    "file": "assets/animations/grok-done_c.json"
+  },
+  {
+    "id": "grok-blocked_a",
+    "name": "阻塞 A",
+    "file": "assets/animations/grok-blocked_a.json"
+  },
+  {
+    "id": "grok-blocked_b",
+    "name": "阻塞 B",
+    "file": "assets/animations/grok-blocked_b.json"
+  },
+  {
+    "id": "grok-blocked_c",
+    "name": "阻塞 C",
+    "file": "assets/animations/grok-blocked_c.json"
+  },
+  {
+    "id": "grok-bodymoves_a",
+    "name": "动作 A",
+    "file": "assets/animations/grok-bodymoves_a.json"
+  },
+  {
+    "id": "grok-rotation_a",
+    "name": "旋转 A",
+    "file": "assets/animations/grok-rotation_a.json"
+  },
+  {
+    "id": "grok-rotation_b",
+    "name": "旋转 B",
+    "file": "assets/animations/grok-rotation_b.json"
+  },
+  {
+    "id": "grok-rotation_c",
+    "name": "旋转 C",
+    "file": "assets/animations/grok-rotation_c.json"
+  },
+  {
+    "id": "grok-logo_a",
+    "name": "标志 A",
+    "file": "assets/animations/grok-logo_a.json"
+  },
+  {
+    "id": "grok-logo_b",
+    "name": "标志 B",
+    "file": "assets/animations/grok-logo_b.json"
+  },
+  {
+    "id": "grok-marketing_a",
+    "name": "展示 A",
+    "file": "assets/animations/grok-marketing_a.json"
+  },
+  {
+    "id": "grok-marketing_b",
+    "name": "展示 B",
+    "file": "assets/animations/grok-marketing_b.json"
+  },
+  {
+    "id": "grok-marketing_c",
+    "name": "展示 C",
+    "file": "assets/animations/grok-marketing_c.json"
+  },
+  {
+    "id": "grok-marketing_d",
+    "name": "展示 D",
+    "file": "assets/animations/grok-marketing_d.json"
+  }
+]

@@ -48,8 +48,13 @@ struct BsstollBridgeFiles {
         if bootstrap {
             let domain="gui/\(uid)";let job=domain+"/local.codex.atoll-status"
             if changed || agentChanged { _=try? launchctl(["bootout",job]) }
-            if launchctlOrFailure(["print",job]) != 0 {
-                guard try launchctl(["bootstrap",domain,plist.path])==0 else { throw CocoaError(.executableRuntimeMismatch) }
+            if changed || agentChanged || launchctlOrFailure(["print",job]) != 0 {
+                var started=false
+                for attempt in 0..<8 {
+                    if try launchctl(["bootstrap",domain,plist.path])==0 { started=true;break }
+                    if attempt<7 { Thread.sleep(forTimeInterval:0.25) }
+                }
+                guard started else { throw CocoaError(.executableRuntimeMismatch) }
             }
         }
         if changed { try manifest.write(to:marker,options:.atomic) }

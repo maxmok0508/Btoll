@@ -108,6 +108,21 @@ class DynamicIslandViewModel: NSObject, ObservableObject {
     @Published var isCameraExpanded: Bool = false
     @Published var isRequestingAuthorization: Bool = false
 
+    @Published private(set) var monitorContentHeight: CGFloat = 380
+    var monitorPanelHeight: CGFloat {
+        let display=NSScreen.screens.first { $0.localizedName == screen } ?? NSScreen.main
+        let cap=(display?.frame.height ?? 900)*0.75 - notchShadowPaddingValue(isMinimalistic:Defaults[.enableMinimalisticUI])
+        return min(max(280,monitorContentHeight),max(280,cap))
+    }
+    func setMonitorContentHeight(_ height:CGFloat) {
+        guard height.isFinite,abs(monitorContentHeight-height)>1 else { return }
+        monitorContentHeight=height
+        guard notchState == .open else { return }
+        let target=calculateDynamicNotchSize()
+        withAnimation(NSWorkspace.shared.accessibilityDisplayShouldReduceMotion ? nil : .easeInOut(duration:0.2)) { notchSize=target }
+        (AppDelegate.monitoringDelegate ?? AppDelegate.shared)?.ensureWindowSize(addShadowPadding(to:target,isMinimalistic:Defaults[.enableMinimalisticUI]),animated:false,force:false)
+    }
+
     @Published var screen: String?
 
     @Published var notchSize: CGSize = getClosedNotchSize()
@@ -374,7 +389,7 @@ class DynamicIslandViewModel: NSObject, ObservableObject {
            let id = coordinator.selectedExtensionExperienceID,
            let payload = ExtensionNotchExperienceManager.shared.payload(experienceID: id),
            let height = customAtollDashboardHeight(id: id, bundleIdentifier: payload.bundleIdentifier) {
-            adjustedSize.height = height
+            adjustedSize.height = id == "hardware-temperature" ? monitorPanelHeight : height
             return adjustedSize
         }
 
@@ -384,11 +399,8 @@ class DynamicIslandViewModel: NSObject, ObservableObject {
             return adjustedSize
         }
 
-        return statsAdjustedNotchSize(
-            from: adjustedSize,
-            isStatsTabActive: coordinator.currentView == .stats,
-            secondRowProgress: coordinator.statsSecondRowExpansion
-        )
+        if coordinator.currentView == .stats { adjustedSize.height=monitorPanelHeight }
+        return adjustedSize
     }
 
     func close() {

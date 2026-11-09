@@ -206,13 +206,14 @@ func notchTerminalBottomCornerRadii(
 func statsAdjustedNotchSize(
     from baseSize: CGSize,
     isStatsTabActive: Bool,
-    secondRowProgress: CGFloat
+    secondRowProgress: CGFloat,
+    preferredHeight: CGFloat = 380
 ) -> CGSize {
     guard isStatsTabActive, Defaults[.enableStatsFeature] else {
         return baseSize
     }
 
-    return CGSize(width: baseSize.width, height: 380)
+    return CGSize(width: baseSize.width, height: preferredHeight)
 }
 
 func notchShadowPaddingValue(isMinimalistic: Bool) -> CGFloat {

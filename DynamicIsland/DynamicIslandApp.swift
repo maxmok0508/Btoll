@@ -99,6 +99,7 @@ extension AppDelegate {
 }
 
 class AppDelegate: NSObject, NSApplicationDelegate {
+    static weak var monitoringDelegate: AppDelegate?
     var statusItem: NSStatusItem?
     var windows: [NSScreen: NSWindow] = [:]
     var viewModels: [NSScreen: DynamicIslandViewModel] = [:]
@@ -527,7 +528,8 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         let adjustedContentSize = statsAdjustedNotchSize(
             from: baseSize,
             isStatsTabActive: coordinator.currentView == .stats,
-            secondRowProgress: coordinator.statsSecondRowExpansion
+            secondRowProgress: coordinator.statsSecondRowExpansion,
+            preferredHeight: vm.monitorPanelHeight
         )
         var result = addShadowPadding(
             to: adjustedContentSize,
@@ -541,12 +543,16 @@ class AppDelegate: NSObject, NSApplicationDelegate {
     /// shadow insets and top-offset only when the screen lacks a physical notch
     /// and the user has chosen the Dynamic Island style.
     private func adjustedSizeForScreen(_ baseSize: CGSize, screen: NSScreen) -> CGSize {
-        guard shouldUseDynamicIslandMode(for: screen.localizedName) else {
-            return baseSize
+        var adjusted=baseSize
+        let model=Defaults[.showOnAllDisplays] ? viewModels[screen] : vm
+        let thermal=coordinator.currentView == .extensionExperience && coordinator.selectedExtensionExperienceID == "hardware-temperature"
+        if (coordinator.currentView == .stats || thermal),let model,model.notchState == .open {
+            adjusted.height=model.monitorPanelHeight+notchShadowPaddingValue(isMinimalistic:Defaults[.enableMinimalisticUI])
         }
-        var adjusted = baseSize
-        adjusted.width += dynamicIslandShadowInset * 2
-        adjusted.height += dynamicIslandTopOffset
+        if shouldUseDynamicIslandMode(for:screen.localizedName) {
+            adjusted.width += dynamicIslandShadowInset*2
+            adjusted.height += dynamicIslandTopOffset
+        }
         return adjusted
     }
 
@@ -595,6 +601,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
     }
     
     func applicationDidFinishLaunching(_ notification: Notification) {
+        Self.monitoringDelegate=self
         let userInfo: [String: Any] = [
             AtollDistributedNotifications.UserInfoKey.sourcePID: NSNumber(value: ProcessInfo.processInfo.processIdentifier)
         ]

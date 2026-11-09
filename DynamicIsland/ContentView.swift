@@ -188,7 +188,7 @@ struct ContentView: View {
             return CGSize(width: baseSize.width, height: preferredHeight)
         }
         
-        return coordinator.currentView == .stats ? CGSize(width: baseSize.width, height: 380) : baseSize
+        return coordinator.currentView == .stats ? CGSize(width: baseSize.width, height: vm.monitorPanelHeight) : baseSize
     }
 
     @State private var hoverTask: Task<Void, Never>?
@@ -2197,7 +2197,7 @@ struct ContentView: View {
 
     private func extensionTabPreferredHeight(baseSize: CGSize) -> CGFloat? {
         if let payload = currentExtensionTabPayload(),
-           let height = customAtollDashboardHeight(id: payload.id, bundleIdentifier: payload.bundleIdentifier) { return height }
+           let height = customAtollDashboardHeight(id: payload.id, bundleIdentifier: payload.bundleIdentifier) { return payload.id == "hardware-temperature" ? vm.monitorPanelHeight : height }
         guard let preferred = currentExtensionTabPayload()?.descriptor.tab?.preferredHeight else {
             return nil
         }

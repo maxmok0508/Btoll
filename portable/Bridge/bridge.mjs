@@ -1,4 +1,6 @@
 import {coreMetrics} from './thermal-metrics.mjs';
+import {workAnimation,animationMode} from './work-animation.mjs';
+import {codexAnimationState} from './codex-animation.mjs';
 import fs from 'node:fs';
 import {spawn,execFileSync} from 'node:child_process';
 import path from 'node:path';
@@ -8,8 +10,13 @@ import {StringDecoder} from 'node:string_decoder';
 
 const BUNDLE = 'local.codex.atoll-status';
 const statusLabels=JSON.parse(fs.readFileSync(new URL('./assets/status-labels.json',import.meta.url),'utf8'));
-const brandPNG = fs.readFileSync(new URL('./assets/brand-icon.png',import.meta.url)).toString('base64');
-const brandMotion = fs.readFileSync(new URL('./assets/brand-icon-active.json',import.meta.url)).toString('base64');
+// Optional per-user artwork survives runtime upgrades and is never bundled automatically.
+function statusAsset(local, fallback) {
+  const candidate=new URL('./assets/'+local,import.meta.url);
+  return fs.readFileSync(fs.existsSync(candidate) ? candidate : new URL('./assets/'+fallback,import.meta.url)).toString('base64');
+}
+const brandPNG = statusAsset('local-status.png','brand-icon.png');
+const brandMotion = statusAsset('local-status-active.json','brand-icon-active.json');
 
 const ROOT = process.env.CODEX_HOME || path.join(os.homedir(), '.codex');
 const states = new Map();
@@ -36,16 +43,20 @@ export function applyEvent(state, record, setQuota = () => {}) {
   }
   if (record.type === 'response_item' && state.running) {
     if (p.type === 'function_call' || p.type === 'custom_tool_call') {
-      state.phase='工具执行中'; state.tool=String(p.name || '工具').split('__').pop().slice(0,36); state.last=time;
+      state.tool=String(p.name || '工具').split('__').pop().split('.').pop().slice(0,36);state.waitingInput=['request_user_input','request_permissions'].includes(state.tool);state.inputCall=state.waitingInput?p.call_id:null;state.phase=state.waitingInput?'等待输入':'工具执行中';state.last=time;
+    } else if(p.type==='message'&&p.role==='assistant'){state.phase='响应中';state.last=time;
     } else if (p.type === 'function_call_output' || p.type === 'custom_tool_call_output') {
-      state.phase='处理中'; state.last=time;
+      if(!state.inputCall||p.call_id===state.inputCall){state.waitingInput=false;state.inputCall=null;}state.phase='处理中'; state.last=time;
     }
   }
   if (record.type === 'event_msg') {
     if (p.type === 'task_started') {
-      state.running = true; state.started = time; state.last = time; state.tools = 0; state.tool = ''; state.phase='处理中';
+      state.running = true; state.started = time; state.last = time; state.tools = 0; state.tool = ''; state.phase='处理中';state.waitingInput=false;state.inputCall=null;
     } else if (p.type === 'task_complete' || p.type === 'turn_aborted') {
-      state.running = false; state.last = time; state.finished = time; state.outcome=p.type==='turn_aborted'?'已中止':'已完成';
+      state.running = false;state.waitingInput=false;state.inputCall=null; state.last = time; state.finished = time; state.outcome=p.type==='turn_aborted'?'已中止':'已完成';
+    } else if(['approval_required','waiting_for_input','request_user_input'].includes(p.type)){state.waitingInput=true;state.phase='等待输入';state.last=time;
+    } else if(['agent_message','agent_message_delta'].includes(p.type)&&state.running){state.waitingInput=false;state.phase='响应中';state.last=time;
+    } else if(p.type==='user_message'&&state.running){state.waitingInput=false;state.inputCall=null;state.phase='处理中';state.last=time;
     } else if (p.type === 'item_completed') {
       state.last = Math.max(state.last || 0, time);
       const item = p.item || {};
@@ -186,7 +197,9 @@ export function descriptors(s) {
   const detail=latest?`${latest.project} · ${latest.phase||'处理中'}${latest.tool?' · '+latest.tool:''}`:s.recent?'最近一轮已完成':'等待 Codex 会话';
   const reset=q?.reset?new Date(q.reset*1000).toLocaleString('zh-CN',{month:'numeric',day:'numeric',hour:'2-digit',minute:'2-digit'}):'待同步';
   const age=q?Math.floor((Date.now()-q.observed)/60000):null;
-  const phase=s.active.length?(latest?.phase==='工具执行中'?'执行中':'工作中'):s.unknown.length?'待确认':'等待中';
+  const phase=codexAnimationState(s).label;
+  const animationRoot=fileURLToPath(new URL('.',import.meta.url));
+  const animate=s.active.length>0||animationMode(animationRoot)==='codex';
   const cards=s.resetCards?.count;
   const cardsText=Number.isInteger(cards)?String(cards):'—';
   const countdown=resetCountdown(q?.reset);
@@ -202,7 +215,7 @@ export function descriptors(s) {
   ];
   return {
     activity:{id:'codex-status',bundleIdentifier:BUNDLE,priority:s.active.length?'high':'normal',title:'Codex',subtitle:status,
-      leadingIcon:s.active.length?{lottie:{animationData:brandMotion,size:[26,26]}}:{image:{data:brandPNG,size:[19,19],cornerRadius:0}},
+      leadingIcon:animate?{lottie:{animationData:workAnimation(animationRoot,Date.now(),s) ?? brandMotion,size:[26,26]}}:{image:{data:brandPNG,size:[19,19],cornerRadius:0}},
       trailingContent:statusLabel(phase,remaining),
       progress:0,accentColor:blue,allowsMusicCoexistence:!s.active.length,metadata:{source:'local-codex-events'},
       centerTextStyle:'standard',sneakPeekConfig:{enabled:false,showOnUpdate:false}},

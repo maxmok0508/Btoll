@@ -10,11 +10,12 @@
 
 安装后在“应用程序”打开 **Btoll**。Codex 数据来自这台 Mac 自己的 Codex 登录与会话；不包含作者的账号、密钥或聊天记录。首次启动会安装当前用户的本地监控扩展，并仅授权实时活动和刘海内容；已有用户的设置与撤销授权会保留。
 
-安装包为本地临时签名，尚未经过 Apple 公证。如 macOS 拦截，请在“系统设置 → 隐私与安全性”中核对应用后使用“仍要打开”。无需关闭系统安全保护。
+包内应用采用临时签名，安装包未签名且尚未经过 Apple 公证。如 macOS 拦截，请在“系统设置 → 隐私与安全性”中核对应用后使用“仍要打开”。无需关闭系统安全保护。
 
 ## 功能
 
 - Codex 配额、重置时间与重置卡、最近会话和状态、个人活动方格图。
+- 内置 28 组 Grok Bot 原动画，默认跟随 Codex 的处理、工作、响应、等待输入与完成状态切换；每种状态内连续衔接多个动作，支持单独选择及 Lottie 导入。
 - CPU、GPU、内存环形进度，三页横向切换及详细性能数据。
 - 带图标的完整进程列表，搜索与 CPU／内存排序；按应用汇总网络和磁盘 I/O，查看磁盘卷及网卡详情。
 - 电池健康、循环次数、充放电功率和温度；查看系统热压力与正在阻止休眠的进程。
@@ -24,9 +25,25 @@
 
 无风扇机型不提供调速。传感器和 SMC 能力因型号而异；当前实机验证为 M6，其他 M 系列及 macOS 14.6 的兼容范围基于构建目标与映射检查，尚未逐一实测。请勿同时运行多个风扇控制器。
 
+## 截图
+
+| 性能概览 | 温度概览 |
+| --- | --- |
+| ![性能概览](docs/screenshots/performance-overview.png) | ![温度概览](docs/screenshots/temperatures.png) |
+| **核心负载与展开详情** | **核心温度** |
+| ![核心负载与展开详情](docs/screenshots/performance-expanded.png) | ![核心温度环形读数](docs/screenshots/core-temperatures.png) |
+| **电源与休眠断言** | **应用网络流量** |
+| ![电源与休眠断言](docs/screenshots/power-and-awake.png) | ![按应用和网卡查看网络流量](docs/screenshots/app-network.png) |
+
+### 工作动画设置
+
+![跟随 Codex 状态的工作动画设置](docs/screenshots/work-animation-settings.png)
+
+截图来自实际运行的本地版本。展开时整个刘海向下延伸，最高约为当前屏幕的 3/4，超出内容在内部滚动。
+
 ## 从源码构建
 
-需要 Apple Silicon Mac、完整 Xcode 及项目依赖所需的 Metal Toolchain。
+需要 Apple Silicon Mac、完整 Xcode、CMake 及项目依赖所需的 Metal Toolchain。
 
 ```sh
 ./scripts/build-btoll.sh
