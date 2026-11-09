@@ -14,6 +14,7 @@ enum BsstollPortableSetup {
                 let result=try await Task.detached {
                     try BsstollBridgeFiles.install(resource:resource,home:home,uid:uid)
                 }.value
+                BtollL10n.writeBridgeLanguage()
                 if result.firstInstall {
                     Defaults[.enableStatsFeature]=true
                     Defaults[.dynamicShelf]=false

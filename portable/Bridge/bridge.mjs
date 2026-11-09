@@ -9,6 +9,7 @@ import {fileURLToPath} from 'node:url';
 import {StringDecoder} from 'node:string_decoder';
 
 const BUNDLE = 'local.codex.atoll-status';
+const englishStatusLabels=JSON.parse(fs.readFileSync(new URL('./assets/status-labels-en.json',import.meta.url),'utf8'));
 const statusLabels=JSON.parse(fs.readFileSync(new URL('./assets/status-labels.json',import.meta.url),'utf8'));
 // Optional per-user artwork survives runtime upgrades and is never bundled automatically.
 function statusAsset(local, fallback) {
@@ -177,7 +178,12 @@ export function snapshot() {
 }
 
 function statusLabel(phase,remaining) {
-  const data=statusLabels[`${phase}|${remaining??-1}`];
+  let english=false;
+  try{english=JSON.parse(fs.readFileSync(new URL('./interface-preferences.json',import.meta.url),'utf8')).language==='en';}catch{}
+  const labels=english?englishStatusLabels:statusLabels;
+  const quota=Number.isFinite(remaining)?Math.max(0,Math.min(100,Math.round(remaining))):-1;
+  const data=labels[`${phase}|${quota}`] ?? labels[`工作中|${quota}`] ?? labels['等待中|-1'];
+  if(!data)throw new Error('Missing bundled Codex status label');
   const animation={v:'5.7.4',fr:30,ip:0,op:90,w:168,h:64,assets:[{id:'label',w:168,h:64,u:'',p:'data:image/png;base64,'+data,e:1}],layers:[{ddd:0,ind:1,ty:2,refId:'label',sr:1,ks:{o:{a:0,k:100},r:{a:0,k:0},p:{a:0,k:[0,0,0]},a:{a:0,k:[0,0,0]},s:{a:0,k:[100,100,100]}},ip:0,op:90,st:0,bm:0}]};
   return {animation:{data:Buffer.from(JSON.stringify(animation)).toString('base64'),size:[84,32]}};
 }

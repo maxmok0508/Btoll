@@ -5,7 +5,7 @@ from pathlib import Path
 ROOT=Path(__file__).resolve().parents[1]
 WORK=ROOT/'.build.noindex'
 OUT=ROOT/'dist'
-VERSION='1.0.0'
+VERSION='1.1.0'
 def run(*args, **kwargs):
     print('+', ' '.join(map(str,args)),flush=True)
     subprocess.run(list(map(str,args)),check=True,**kwargs)
@@ -74,7 +74,7 @@ def main():
     info_path=target/'Contents/Info.plist'
     release_info=plistlib.loads(info_path.read_bytes())
     release_info['CFBundleShortVersionString']=VERSION
-    release_info['CFBundleVersion']='1000'
+    release_info['CFBundleVersion']='1100'
     info_path.write_bytes(plistlib.dumps(release_info))
     # Validate every Mach-O, including prebuilt resources, before creating an installer.
     for binary in target.rglob('*'):
@@ -116,6 +116,7 @@ def main():
     assert 'arm64' in (expanded/'Distribution').read_text() and '14.6' in (expanded/'Distribution').read_text()
     for binary in [target/'Contents/MacOS'/info['CFBundleExecutable'],helper,*[bridge/n for n in ['node','temperature-reader','metadata-reader']]]:
         run('file',binary);run('codesign','--verify','--strict',binary)
-    shutil.copy2(ROOT/'docs/INSTALL.zh-CN.md',OUT/'安装说明.md')
+    for language in ['zh-CN','en']:
+        shutil.copy2(ROOT/f'docs/INSTALL.{language}.md',OUT/f'INSTALL.{language}.md')
     print('Installer:',package,flush=True)
 if __name__=='__main__':main()

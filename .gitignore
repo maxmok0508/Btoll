@@ -194,3 +194,5 @@ animation-preferences.json
 user-animations/
 
 !scripts/combine_work_animations.py
+
+interface-preferences.json

@@ -1785,7 +1785,9 @@ struct ContentView: View {
         let outerHeight = notchHeight
         let contentHeight = max(0, notchHeight - (isHovering ? 0 : 12))
         let leadingWidth = max(contentHeight, 44)
-        let centerWidth: CGFloat = max(vm.closedNotchSize.width + (isHovering ? 8 : 0), 96)
+        // Longer English status labels must clear the physical camera notch.
+        let statusClearance: CGFloat = payload.descriptor.id == "codex-status" && BtollL10n.isEnglish ? 48 : 0
+        let centerWidth: CGFloat = max(vm.closedNotchSize.width + (isHovering ? 8 : 0), 96) + statusClearance
         let trailingWidth = ExtensionLayoutMetrics.trailingWidth(
             for: payload,
             baseWidth: leadingWidth,

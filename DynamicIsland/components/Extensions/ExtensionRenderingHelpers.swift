@@ -296,6 +296,7 @@ struct ExtensionLottieView: View {
                         loopMode: loopMode
                     )
                 )
+                .id(cachedURL)
             } else {
                 ProgressView()
                     .controlSize(.small)
@@ -303,10 +304,8 @@ struct ExtensionLottieView: View {
             }
         }
         .frame(width: size.width, height: size.height)
-        .task {
-            if cachedURL == nil {
-                cachedURL = ExtensionLottieCache.shared.url(for: data)
-            }
+        .task(id: data) {
+            cachedURL = ExtensionLottieCache.shared.url(for: data)
         }
     }
 }

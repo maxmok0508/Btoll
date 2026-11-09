@@ -25,12 +25,12 @@ struct BtollWorkAnimationSection: View {
                 if choices.count>1 { option(id:"shuffle",name:"自动轮换",url:choices.first.map { root.appendingPathComponent($0.file) }) }
             }.padding(.vertical,6)
             HStack {
-                Button("导入动画…",systemImage:"plus") { importAnimation() }
+                Button(BtollL10n.text("导入动画…"),systemImage:"plus") { importAnimation() }
                 Spacer()
-                if let error { Text(error).font(.caption).foregroundStyle(.red).lineLimit(2) }
+                if let error { BtollText(error).font(.caption).foregroundStyle(.red).lineLimit(2) }
             }
-        } header: { Text("工作动画") }
-          footer: { Text("跟随 Codex 的响应、执行、等待输入和完成状态切换动画；旋转表示正在处理。每种状态内的动作连续衔接，约 5 秒更新一次。") }
+        } header: { BtollText("工作动画") }
+          footer: { BtollText("跟随 Codex 的响应、执行、等待输入和完成状态切换动画；旋转表示正在处理。每种状态内的动作连续衔接，约 5 秒更新一次。") }
           .onAppear(perform:reload)
     }
     private func option(id:String,name:String,url:URL?)->some View {
@@ -50,13 +50,13 @@ struct BtollWorkAnimationSection: View {
                     } else { Image(systemName:"shuffle").font(.title2) }
                 }
                 HStack(spacing:5) {
-                    Text(name).font(.system(size:11,weight:.medium)).lineLimit(1)
+                    BtollText(name).font(.system(size:11,weight:.medium)).lineLimit(2).multilineTextAlignment(.center).frame(minHeight:28)
                     if selected==id { Image(systemName:"checkmark.circle.fill").foregroundStyle(.mint) }
                 }
             }.padding(9).frame(maxWidth:.infinity)
                 .background(selected==id ? Color.mint.opacity(0.1):Color.primary.opacity(0.035),in:RoundedRectangle(cornerRadius:13))
                 .overlay(RoundedRectangle(cornerRadius:13).stroke(selected==id ? Color.mint.opacity(0.7):.clear,lineWidth:1))
-        }.buttonStyle(.plain).accessibilityLabel(name).accessibilityValue(selected==id ? "已选择":"未选择")
+        }.buttonStyle(.plain).accessibilityLabel(BtollL10n.text(name)).accessibilityValue(selected==id ? "已选择":"未选择")
     }
     private func reload() {
         func read(_ url:URL)->[Choice] { guard let data=try? Data(contentsOf:url),let values=try? JSONDecoder().decode([Choice].self,from:data) else{return []};return values.filter { !$0.file.hasPrefix("/") && !$0.file.split(separator:"/").contains("..") && FileManager.default.fileExists(atPath:root.appendingPathComponent($0.file).path) } }

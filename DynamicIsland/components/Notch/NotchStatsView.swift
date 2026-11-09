@@ -75,22 +75,22 @@ struct NotchStatsView: View {
     var body: some View {
         VStack(alignment:.leading,spacing:12) {
             HStack {
-                Text("性能").font(.system(size:16,weight:.semibold,design:.rounded))
+                BtollText("性能").font(.system(size:16,weight:.semibold,design:.rounded))
                 Spacer()
                 Circle().fill(stats.isMonitoring ? mint : .orange).frame(width:5,height:5)
-                Text(stats.isMonitoring ? "实时采集" : "等待采集").font(.system(size:10)).foregroundStyle(.white.opacity(0.45))
+                BtollText(stats.isMonitoring ? "实时采集" : "等待采集").font(.system(size:10)).foregroundStyle(.white.opacity(0.45))
             }
             HStack(spacing:16) {
                 ForEach(0..<3,id:\.self) { index in
                     Button { withAnimation(.easeInOut(duration:0.2)) { page=index } } label: {
                         VStack(spacing:5) {
-                            Text(titles[index]).font(.system(size:12,weight:page == index ? .semibold : .regular)).foregroundStyle(.white.opacity(page == index ? 1 : 0.4))
+                            BtollText(titles[index]).font(.system(size:12,weight:page == index ? .semibold : .regular)).foregroundStyle(.white.opacity(page == index ? 1 : 0.4))
                             Capsule().fill(page == index ? mint : .clear).frame(height:2)
                         }.fixedSize(horizontal:true,vertical:false)
                     }.buttonStyle(.plain)
                 }
                 Spacer()
-                Text("左右切页 · 点击展开").font(.system(size:10)).foregroundStyle(.white.opacity(0.3))
+                BtollText("左右切页 · 点击展开").font(.system(size:10)).foregroundStyle(.white.opacity(0.3))
             }
             GeometryReader { geo in
                 ScrollView(.horizontal) {
@@ -156,18 +156,18 @@ struct NotchStatsView: View {
             }
             VStack(alignment:.leading,spacing:14) {
                 HStack {
-                    Text("CPU 核心实时占用").font(.system(size:12,weight:.semibold))
+                    BtollText("CPU 核心实时占用").font(.system(size:12,weight:.semibold))
                     Spacer()
-                    Text("\(stats.cpuCoreUsage.count) 个逻辑核心").font(.system(size:10)).foregroundStyle(.white.opacity(0.4))
+                    BtollText("\(stats.cpuCoreUsage.count) 个逻辑核心").font(.system(size:10)).foregroundStyle(.white.opacity(0.4))
                 }
                 if stats.cpuCoreUsage.isEmpty {
-                    Text("等待核心数据…").font(.system(size:11)).foregroundStyle(.white.opacity(0.4))
+                    BtollText("等待核心数据…").font(.system(size:11)).foregroundStyle(.white.opacity(0.4))
                 } else {
                     LazyVGrid(columns:Array(repeating:GridItem(.flexible(),spacing:12),count:8),spacing:14) {
                         ForEach(stats.cpuCoreUsage) { core in
                             VStack(spacing:6) {
                                 ring(core.usage,color:mint,size:48,lineWidth:5,fontSize:11)
-                                Text("核心 \(core.id+1)").font(.system(size:9)).foregroundStyle(.white.opacity(0.45))
+                                BtollText("核心 \(core.id+1)").font(.system(size:9)).foregroundStyle(.white.opacity(0.45))
                             }
                         }
                     }.padding(.vertical,4)
@@ -190,8 +190,8 @@ struct NotchStatsView: View {
             HStack(alignment:.top,spacing:12) {
                 VStack(spacing:9) {
                     ring(ready ? stats.memoryUsage : nil,color:.purple,size:84,lineWidth:8,fontSize:22)
-                    Text("内存使用").font(.system(size:12,weight:.semibold))
-                    Text(bytes(stats.memoryBreakdown.usedBytes)+" / "+bytes(stats.memoryBreakdown.totalBytes)).font(.system(size:10)).foregroundStyle(.white.opacity(0.45))
+                    BtollText("内存使用").font(.system(size:12,weight:.semibold))
+                    BtollText(bytes(stats.memoryBreakdown.usedBytes)+" / "+bytes(stats.memoryBreakdown.totalBytes)).font(.system(size:10)).foregroundStyle(.white.opacity(0.45))
                 }.frame(maxWidth:.infinity).padding(16).background(.white.opacity(0.045),in:RoundedRectangle(cornerRadius:14))
                 infoBlock("内存与交换",rows:[("内存压力",pressureText),("空闲",bytes(stats.memoryBreakdown.freeBytes)),("交换已用 / 总量",bytes(stats.memoryBreakdown.swap.usedBytes)+" / "+bytes(stats.memoryBreakdown.swap.totalBytes))])
             }
@@ -247,22 +247,22 @@ struct NotchStatsView: View {
     private func disclosure<C:View>(_ title:String,key:String,@ViewBuilder content:()->C)->some View {
         VStack(spacing:12) {
             Button { toggle(key) } label: {
-                HStack { Text(title).font(.system(size:12,weight:.medium));Spacer();Image(systemName:expanded.contains(key) ? "chevron.up" : "chevron.down").font(.system(size:10,weight:.semibold)).foregroundStyle(.white.opacity(0.5)) }.padding(15).contentShape(Rectangle())
+                HStack { BtollText(title).font(.system(size:12,weight:.medium));Spacer();Image(systemName:expanded.contains(key) ? "chevron.up" : "chevron.down").font(.system(size:10,weight:.semibold)).foregroundStyle(.white.opacity(0.5)) }.padding(15).contentShape(Rectangle())
             }.buttonStyle(.plain).background(.white.opacity(0.045),in:RoundedRectangle(cornerRadius:12))
             if expanded.contains(key) { content() }
         }
     }
     private func mini(_ title:String,_ value:String) -> some View {
-        VStack(alignment:.leading,spacing:5) { Text(title).font(.system(size:10)).foregroundStyle(.white.opacity(0.45)); Text(value).font(.system(size:13,weight:.medium,design:.rounded)).monospacedDigit() }.frame(maxWidth:.infinity,alignment:.leading)
+        VStack(alignment:.leading,spacing:5) { BtollText(title).font(.system(size:10)).foregroundStyle(.white.opacity(0.45)); BtollText(value).font(.system(size:13,weight:.medium,design:.rounded)).monospacedDigit() }.frame(maxWidth:.infinity,alignment:.leading)
     }
     private func infoBlock(_ title:String,rows:[(String,String)]) -> some View {
         VStack(alignment:.leading,spacing:9) {
-            Text(title).font(.system(size:11,weight:.semibold)).foregroundStyle(mint).lineLimit(2)
+            BtollText(title).font(.system(size:11,weight:.semibold)).foregroundStyle(mint).lineLimit(2)
             ForEach(rows.indices,id:\.self) { index in
                 HStack(alignment:.firstTextBaseline) {
-                    Text(rows[index].0).font(.system(size:10)).foregroundStyle(.white.opacity(0.45))
+                    BtollText(rows[index].0).font(.system(size:10)).foregroundStyle(.white.opacity(0.45))
                     Spacer(minLength:8)
-                    Text(rows[index].1).font(.system(size:11,weight:.medium,design:.rounded)).monospacedDigit().multilineTextAlignment(.trailing)
+                    BtollText(rows[index].1).font(.system(size:11,weight:.medium,design:.rounded)).monospacedDigit().multilineTextAlignment(.trailing)
                 }
             }
         }.frame(maxWidth:.infinity,alignment:.leading).padding(14).background(.white.opacity(0.045),in:RoundedRectangle(cornerRadius:12))
@@ -280,8 +280,8 @@ struct NotchStatsView: View {
     private func gaugeCard(_ title:String,value:Double?,color:Color,subtitle:String) -> some View {
         VStack(spacing:13) {
             ring(value,color:color,size:84,lineWidth:8,fontSize:22)
-            Text(title).font(.system(size:14,weight:.semibold))
-            Text(subtitle).font(.system(size:10)).foregroundStyle(.white.opacity(0.4))
+            BtollText(title).font(.system(size:14,weight:.semibold))
+            BtollText(subtitle).font(.system(size:10)).foregroundStyle(.white.opacity(0.4))
         }.frame(maxWidth:.infinity).padding(.vertical,16).background(.white.opacity(0.045),in:RoundedRectangle(cornerRadius:14))
     }
     private func ring(_ value:Double?,color:Color,size:CGFloat,lineWidth:CGFloat,fontSize:CGFloat) -> some View {
@@ -289,16 +289,16 @@ struct NotchStatsView: View {
         return ZStack {
             Circle().stroke(.white.opacity(0.08),lineWidth:lineWidth)
             Circle().trim(from:0,to:fraction).stroke(color,style:StrokeStyle(lineWidth:lineWidth,lineCap:.round)).rotationEffect(.degrees(-90))
-            Text(value.map { String(format:"%.0f%%",$0) } ?? "—").font(.system(size:fontSize,weight:.semibold,design:.rounded)).monospacedDigit()
+            BtollText(value.map { String(format:"%.0f%%",$0) } ?? "—").font(.system(size:fontSize,weight:.semibold,design:.rounded)).monospacedDigit()
         }.frame(width:size,height:size).padding(lineWidth/2).animation(.easeOut(duration:0.25),value:fraction)
             .accessibilityValue(value.map { String(format:"%.0f%%",$0) } ?? "暂无数据")
     }
     private func rateCard(_ title:String,left:String,leftValue:String,right:String,rightValue:String) -> some View {
         VStack(alignment:.leading,spacing:9) {
-            Text(title).font(.system(size:11,weight:.semibold)).foregroundStyle(mint)
+            BtollText(title).font(.system(size:11,weight:.semibold)).foregroundStyle(mint)
             HStack {
-                VStack(alignment:.leading,spacing:3) { Text(ready ? leftValue : "—").font(.system(size:15,weight:.medium,design:.rounded)); Text(left).font(.system(size:9)).foregroundStyle(.white.opacity(0.4)) }.frame(maxWidth:.infinity,alignment:.leading)
-                VStack(alignment:.leading,spacing:3) { Text(ready ? rightValue : "—").font(.system(size:15,weight:.medium,design:.rounded)); Text(right).font(.system(size:9)).foregroundStyle(.white.opacity(0.4)) }.frame(maxWidth:.infinity,alignment:.leading)
+                VStack(alignment:.leading,spacing:3) { BtollText(ready ? leftValue : "—").font(.system(size:15,weight:.medium,design:.rounded)); BtollText(left).font(.system(size:9)).foregroundStyle(.white.opacity(0.4)) }.frame(maxWidth:.infinity,alignment:.leading)
+                VStack(alignment:.leading,spacing:3) { BtollText(ready ? rightValue : "—").font(.system(size:15,weight:.medium,design:.rounded)); BtollText(right).font(.system(size:9)).foregroundStyle(.white.opacity(0.4)) }.frame(maxWidth:.infinity,alignment:.leading)
             }
         }.padding(14).background(.white.opacity(0.045),in:RoundedRectangle(cornerRadius:12))
     }
@@ -318,7 +318,7 @@ struct UnifiedStatsCard: View {
                     .foregroundStyle(graphData.color)
                     .font(.caption) // Match boring.notch font size
                 
-                Text(graphData.title)
+                BtollText(graphData.title)
                     .font(.caption) // Match boring.notch font size
                     .fontWeight(.medium)
                     .foregroundStyle(Color.white.opacity(0.8))
@@ -327,7 +327,7 @@ struct UnifiedStatsCard: View {
                 
                 // Show value on right for single graphs like boring.notch
                 if let singleData = graphData as? SingleGraphData {
-                    Text(singleData.value)
+                    BtollText(singleData.value)
                         .font(.caption) // Match boring.notch font size
                         .fontWeight(.bold)
                         .foregroundStyle(.white)
@@ -337,16 +337,16 @@ struct UnifiedStatsCard: View {
             // Values section for dual graphs only
             if let dualData = graphData as? DualGraphData {
                 HStack(spacing: 6) {
-                    Text(dualData.positiveValue)
+                    BtollText(dualData.positiveValue)
                         .font(.caption)
                         .fontWeight(.semibold)
                         .foregroundColor(dualData.positiveColor)
                     
-                    Text("•")
+                    BtollText("•")
                         .font(.caption2)
                         .foregroundStyle(Color.white.opacity(0.45))
                     
-                    Text(dualData.negativeValue)
+                    BtollText(dualData.negativeValue)
                         .font(.caption)
                         .fontWeight(.semibold)
                         .foregroundColor(dualData.negativeColor)
@@ -371,7 +371,7 @@ struct UnifiedStatsCard: View {
             
             // Click hint - shown for graphs that open popovers
             if graphData.rankingType != nil {
-                Text("Click for details")
+                BtollText("Click for details")
                     .font(.caption2)
                     .foregroundStyle(Color.white.opacity(0.75))
                     .opacity(isHovered ? 1.0 : 0.0)

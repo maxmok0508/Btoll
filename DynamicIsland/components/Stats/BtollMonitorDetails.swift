@@ -7,7 +7,7 @@ struct BtollEnergyCard: View {
     private let mint=Color(red:0.39,green:0.87,blue:0.68)
     var body: some View {
         VStack(alignment:.leading,spacing:14) {
-            Text("电源与温度").font(.system(size:12,weight:.semibold)).foregroundStyle(mint)
+            BtollText("电源与温度").font(.system(size:12,weight:.semibold)).foregroundStyle(mint)
             HStack(spacing:20) {
                 BtollTemperatureRing(title:"CPU 核心平均",value:coreTemperature,size:72)
                 if snapshot.power.present { BtollTemperatureRing(title:"电池温度",value:snapshot.power.temperature,size:72) }
@@ -24,26 +24,26 @@ struct BtollEnergyCard: View {
                 }
             }
             if snapshot.power.present {
-                Text("电池端功率是电池充放电功率，不代表整机或插座功耗。").font(.system(size:10)).foregroundStyle(.white.opacity(0.4))
+                BtollText("电池端功率是电池充放电功率，不代表整机或插座功耗。").font(.system(size:10)).foregroundStyle(.white.opacity(0.4))
             }
             Divider().overlay(.white.opacity(0.08))
             HStack {
-                Text("正在阻止休眠").font(.system(size:12,weight:.semibold))
+                BtollText("正在阻止休眠").font(.system(size:12,weight:.semibold))
                 Spacer()
-                Text(snapshot.awakeAvailable ? "\(snapshot.awake.count) 项" : "等待采集").font(.system(size:10)).foregroundStyle(.white.opacity(0.45))
+                BtollText(snapshot.awakeAvailable ? "\(snapshot.awake.count) 项" : "等待采集").font(.system(size:10)).foregroundStyle(.white.opacity(0.45))
             }
             if snapshot.awakeAvailable && snapshot.awake.isEmpty {
-                Text("未发现阻止闲置休眠的进程").font(.system(size:11)).foregroundStyle(.white.opacity(0.5))
+                BtollText("未发现阻止闲置休眠的进程").font(.system(size:11)).foregroundStyle(.white.opacity(0.5))
             }
             ForEach(snapshot.awake) { item in
                 HStack(alignment:.top,spacing:10) {
                     Image(nsImage:NSRunningApplication(processIdentifier:item.pid)?.icon ?? NSImage(systemSymbolName:"app",accessibilityDescription:nil)!).resizable().frame(width:24,height:24)
                     VStack(alignment:.leading,spacing:3) {
                         Text(item.name).font(.system(size:11,weight:.medium))
-                        Text(item.reason).font(.system(size:10)).foregroundStyle(.white.opacity(0.45)).lineLimit(2).help(item.reason)
+                        BtollText(item.reason).font(.system(size:10)).foregroundStyle(.white.opacity(0.45)).lineLimit(2).help(item.reason)
                     }
                     Spacer(minLength:4)
-                    Text("PID \(item.pid)").font(.system(size:9)).foregroundStyle(.white.opacity(0.35))
+                    BtollText("PID \(item.pid)").font(.system(size:9)).foregroundStyle(.white.opacity(0.35))
                 }
             }
         }.padding(16).background(.white.opacity(0.045),in:RoundedRectangle(cornerRadius:14))
@@ -58,7 +58,7 @@ struct BtollEnergyCard: View {
         }
     }
     private func metric(_ title:String,_ value:String)->some View {
-        VStack(alignment:.leading,spacing:5) { Text(title).font(.system(size:10)).foregroundStyle(.white.opacity(0.45));Text(value).font(.system(size:13,weight:.medium,design:.rounded)).monospacedDigit() }.frame(maxWidth:.infinity,alignment:.leading)
+        VStack(alignment:.leading,spacing:5) { BtollText(title).font(.system(size:10)).foregroundStyle(.white.opacity(0.45));BtollText(value).font(.system(size:13,weight:.medium,design:.rounded)).monospacedDigit() }.frame(maxWidth:.infinity,alignment:.leading)
     }
 }
 
@@ -75,30 +75,30 @@ struct BtollProcessList: View {
     var body: some View {
         VStack(alignment:.leading,spacing:12) {
             HStack {
-                Text("所有进程").font(.system(size:12,weight:.semibold))
-                Text("\(processes.count)").font(.system(size:10)).foregroundStyle(.white.opacity(0.4))
+                BtollText("所有进程").font(.system(size:12,weight:.semibold))
+                BtollText("\(processes.count)").font(.system(size:10)).foregroundStyle(.white.opacity(0.4))
                 Spacer()
-                Picker("排序",selection:$sorting) { Text("CPU").tag(0);Text("内存").tag(1) }.pickerStyle(.segmented).labelsHidden().frame(width:130)
+                Picker(BtollL10n.text("排序"),selection:$sorting) { BtollText("CPU").tag(0);BtollText("内存").tag(1) }.pickerStyle(.segmented).labelsHidden().frame(width:130)
             }
-            TextField("搜索应用、进程或 PID",text:$query).textFieldStyle(.roundedBorder).font(.system(size:11))
-            HStack { Text("进程");Spacer();Text("CPU").frame(width:65,alignment:.trailing);Text("内存").frame(width:78,alignment:.trailing) }.font(.system(size:10)).foregroundStyle(.white.opacity(0.4))
+            TextField(BtollL10n.text("搜索应用、进程或 PID"),text:$query).textFieldStyle(.roundedBorder).font(.system(size:11))
+            HStack { BtollText("进程");Spacer();BtollText("CPU").frame(width:65,alignment:.trailing);BtollText("内存").frame(width:78,alignment:.trailing) }.font(.system(size:10)).foregroundStyle(.white.opacity(0.4))
             LazyVStack(spacing:10) {
                 ForEach(Array(filtered.prefix(limit)),id:\.pid) { process in
                     HStack(spacing:9) {
                         Image(nsImage:process.icon ?? NSImage(systemSymbolName:"app",accessibilityDescription:nil)!).resizable().frame(width:24,height:24)
                         VStack(alignment:.leading,spacing:2) {
                             Text(process.name).font(.system(size:11,weight:.medium)).lineLimit(1).help(process.name)
-                            Text("PID \(process.pid)").font(.system(size:9)).foregroundStyle(.white.opacity(0.4))
+                            BtollText("PID \(process.pid)").font(.system(size:9)).foregroundStyle(.white.opacity(0.4))
                         }
                         Spacer(minLength:4)
-                        Text(process.cpuUsageString).frame(width:65,alignment:.trailing)
-                        Text(process.memoryUsageString).frame(width:78,alignment:.trailing)
+                        BtollText(process.cpuUsageString).frame(width:65,alignment:.trailing)
+                        BtollText(process.memoryUsageString).frame(width:78,alignment:.trailing)
                     }.font(.system(size:11,design:.rounded)).monospacedDigit()
                 }
             }
-            if filtered.isEmpty { Text(query.isEmpty ? "等待进程采样…" : "没有匹配的进程").font(.system(size:11)).foregroundStyle(.white.opacity(0.45)) }
-            if filtered.count>limit { Button("显示更多（剩余 \(filtered.count-limit)）") { limit += 50 }.buttonStyle(.plain).font(.system(size:11)).foregroundStyle(.mint) }
-            Text("进程 CPU 以单核 100% 计，多线程进程可以超过 100%。内存按可读取的驻留内存统计。").font(.system(size:10)).foregroundStyle(.white.opacity(0.35))
+            if filtered.isEmpty { BtollText(query.isEmpty ? "等待进程采样…" : "没有匹配的进程").font(.system(size:11)).foregroundStyle(.white.opacity(0.45)) }
+            if filtered.count>limit { Button(BtollL10n.text("显示更多（剩余 \(filtered.count-limit)）")) { limit += 50 }.buttonStyle(.plain).font(.system(size:11)).foregroundStyle(.mint) }
+            BtollText("进程 CPU 以单核 100% 计，多线程进程可以超过 100%。内存按可读取的驻留内存统计。").font(.system(size:10)).foregroundStyle(.white.opacity(0.35))
         }.padding(16).background(.white.opacity(0.045),in:RoundedRectangle(cornerRadius:14))
             .onAppear { sorting=initialSorting }
             .onChange(of:query) { _,_ in limit=20 }.onChange(of:sorting) { _,_ in limit=20 }
@@ -136,21 +136,21 @@ struct BtollTrafficList: View {
     }
     var body:some View {
         VStack(alignment:.leading,spacing:12) {
-            HStack { Text(title).font(.system(size:12,weight:.semibold));Spacer();Text("按应用汇总").font(.system(size:10)).foregroundStyle(.white.opacity(0.4)) }
-            HStack { Text("应用");Spacer();Text(network ? "下载" : "读取").frame(width:90,alignment:.trailing);Text(network ? "上传" : "写入").frame(width:90,alignment:.trailing) }.font(.system(size:10)).foregroundStyle(.white.opacity(0.4))
-            if !available { Text(network ? "网络进程数据不可用或正在首次采样" : "等待两次磁盘采样，部分进程可能受系统权限限制").font(.system(size:11)).foregroundStyle(.white.opacity(0.45)) }
+            HStack { BtollText(title).font(.system(size:12,weight:.semibold));Spacer();BtollText("按应用汇总").font(.system(size:10)).foregroundStyle(.white.opacity(0.4)) }
+            HStack { BtollText("应用");Spacer();BtollText(network ? "下载" : "读取").frame(width:90,alignment:.trailing);BtollText(network ? "上传" : "写入").frame(width:90,alignment:.trailing) }.font(.system(size:10)).foregroundStyle(.white.opacity(0.4))
+            if !available { BtollText(network ? "网络进程数据不可用或正在首次采样" : "等待两次磁盘采样，部分进程可能受系统权限限制").font(.system(size:11)).foregroundStyle(.white.opacity(0.45)) }
             ForEach(Array(rows.prefix(expanded ? rows.count : 6))) { item in
                 HStack(spacing:9) {
                     Image(nsImage:item.icon ?? NSImage(systemSymbolName:"app",accessibilityDescription:nil)!).resizable().frame(width:24,height:24)
                     Text(item.name).font(.system(size:11)).lineLimit(1).help(item.name)
-                    if item.count>1 { Text("\(item.count)").font(.system(size:9)).foregroundStyle(.white.opacity(0.4)) }
+                    if item.count>1 { BtollText("\(item.count)").font(.system(size:9)).foregroundStyle(.white.opacity(0.4)) }
                     Spacer(minLength:4)
-                    Text(rate(item.incoming)).frame(width:90,alignment:.trailing)
-                    Text(rate(item.outgoing)).frame(width:90,alignment:.trailing)
+                    BtollText(rate(item.incoming)).frame(width:90,alignment:.trailing)
+                    BtollText(rate(item.outgoing)).frame(width:90,alignment:.trailing)
                 }.font(.system(size:11,design:.rounded)).monospacedDigit()
             }
-            if rows.count>6 { Button(expanded ? "收起" : "查看全部 \(rows.count) 个应用") { expanded.toggle() }.buttonStyle(.plain).font(.system(size:11)).foregroundStyle(.mint) }
-            Text(network ? "应用流量约 10 秒更新。读取 macOS 网络进程计数；VPN、代理或系统进程会影响归属，不能与网卡流量直接相加。" : "按可读取的进程物理磁盘 I/O 计数采样，按写入速率排序；缓存写入与系统总量口径不同。").font(.system(size:10)).foregroundStyle(.white.opacity(0.35))
+            if rows.count>6 { Button(BtollL10n.text(expanded ? "收起" : "查看全部 \(rows.count) 个应用")) { expanded.toggle() }.buttonStyle(.plain).font(.system(size:11)).foregroundStyle(.mint) }
+            BtollText(network ? "应用流量约 10 秒更新。读取 macOS 网络进程计数；VPN、代理或系统进程会影响归属，不能与网卡流量直接相加。" : "按可读取的进程物理磁盘 I/O 计数采样，按写入速率排序；缓存写入与系统总量口径不同。").font(.system(size:10)).foregroundStyle(.white.opacity(0.35))
         }.padding(16).background(.white.opacity(0.045),in:RoundedRectangle(cornerRadius:14))
     }
     private func rate(_ value:Double?)->String { guard let value else { return "—" };return ByteCountFormatter.string(fromByteCount:Int64(min(Double(Int64.max),max(0,value))),countStyle:.file)+"/s" }
@@ -181,11 +181,11 @@ struct BtollTemperatureRing:View {
                 Circle().stroke(.white.opacity(0.08),lineWidth:7)
                 Circle().trim(from:0,to:min(1,max(0,(value ?? 0)/120))).stroke(color,style:StrokeStyle(lineWidth:7,lineCap:.round)).rotationEffect(.degrees(-90))
                 VStack(spacing:1) {
-                    Text(value.map { String(format:"%.1f",$0) } ?? "—").font(.system(size:size>70 ? 22 : 15,weight:.semibold,design:.rounded)).monospacedDigit()
-                    Text("°C").font(.system(size:9)).foregroundStyle(.white.opacity(0.45))
+                    BtollText(value.map { String(format:"%.1f",$0) } ?? "—").font(.system(size:size>70 ? 22 : 15,weight:.semibold,design:.rounded)).monospacedDigit()
+                    BtollText("°C").font(.system(size:9)).foregroundStyle(.white.opacity(0.45))
                 }
             }.frame(width:size,height:size).padding(4)
-            Text(title).font(.system(size:10,weight:.medium)).foregroundStyle(.white.opacity(0.65)).lineLimit(2).multilineTextAlignment(.center)
-        }.frame(maxWidth:.infinity).help("温度环范围 0–120°C；数值为实测温度，不是占用率。 ").accessibilityLabel(title).accessibilityValue(value.map { String(format:"%.1f 摄氏度",$0) } ?? "不可用")
+            BtollText(title).font(.system(size:10,weight:.medium)).foregroundStyle(.white.opacity(0.65)).lineLimit(2).multilineTextAlignment(.center)
+        }.frame(maxWidth:.infinity).help("温度环范围 0–120°C；数值为实测温度，不是占用率。 ").accessibilityLabel(BtollL10n.text(title)).accessibilityValue(value.map { String(format:"%.1f 摄氏度",$0) } ?? "不可用")
     }
 }

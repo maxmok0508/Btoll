@@ -17,3 +17,14 @@ test('async optional questions and stale sessions do not falsely imply a blocked
  assert.equal(codexAnimationState({unknown:[state]}).label,'待确认');
  assert.equal(codexAnimationState({recent:{finished:Date.now(),outcome:'已中止'}}).label,'已中止');
 });
+
+test('every Codex phase has valid bundled artwork at every weekly quota value',async()=>{
+ const {readFile}=await import('node:fs/promises');
+ for(const name of ['status-labels.json','status-labels-en.json']){
+  const labels=JSON.parse(await readFile(new URL('../Bridge/assets/'+name,import.meta.url),'utf8'));
+  for(const phase of ['处理中','执行中','响应中','等待输入','待确认','已完成','已中止','等待中'])for(let quota=-1;quota<=100;quota++){
+   const data=labels[`${phase}|${quota}`];assert.ok(data,`${name}: ${phase}|${quota}`);
+   assert.equal(Buffer.from(data,'base64').subarray(0,8).toString('hex'),'89504e470d0a1a0a');
+  }
+ }
+});

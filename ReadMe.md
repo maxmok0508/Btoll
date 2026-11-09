@@ -1,16 +1,21 @@
 <p align="center"><img src="portable/branding/icon.png" width="96" alt="Btoll icon"></p>
 <h1 align="center">Btoll</h1>
+<p align="center">简体中文 · <a href="README.en.md">English</a></p>
 <p align="center">Mac 刘海工作台 · Codex · 性能 · 温度与风扇</p>
 
 基于 [Atoll](https://github.com/Ebullioscopic/Atoll) v2.3.3 延伸开发的独立开源分支，保留原项目历史及 GPL-3.0 许可。感谢 Atoll 与 boring.notch 的贡献者。本项目不代表原作者，也不与 Apple 或 OpenAI 存在隶属关系。
 
 ## 安装
 
-在本仓库 **Releases** 下载 `Btoll-1.0.0-arm64.pkg`。适用于 **Apple Silicon（M 系列），macOS 14.6 或更新版本**。安装包包含应用、独立风扇服务、Node 运行时和原生温度读取器；目标 Mac 无需 Homebrew、Python 或 Xcode。
+在本仓库 **Releases** 下载 `Btoll-1.1.0-arm64.pkg`。适用于 **Apple Silicon（M 系列），macOS 14.6 或更新版本**。安装包包含应用、独立风扇服务、Node 运行时和原生温度读取器；目标 Mac 无需 Homebrew、Python 或 Xcode。
 
 安装后在“应用程序”打开 **Btoll**。Codex 数据来自这台 Mac 自己的 Codex 登录与会话；不包含作者的账号、密钥或聊天记录。首次启动会安装当前用户的本地监控扩展，并仅授权实时活动和刘海内容；已有用户的设置与撤销授权会保留。
 
 包内应用采用临时签名，安装包未签名且尚未经过 Apple 公证。如 macOS 拦截，请在“系统设置 → 隐私与安全性”中核对应用后使用“仍要打开”。无需关闭系统安全保护。
+
+## 语言切换
+
+在 **设置 → 通用 → 语言 / Language** 选择简体中文、English 或跟随系统，按提示重启 Btoll。两种语言使用同一个安装包，保留原有设置与会话数据。
 
 ## 功能
 
@@ -26,6 +31,18 @@
 无风扇机型不提供调速。传感器和 SMC 能力因型号而异；当前实机验证为 M6，其他 M 系列及 macOS 14.6 的兼容范围基于构建目标与映射检查，尚未逐一实测。请勿同时运行多个风扇控制器。
 
 ## 截图
+
+### Codex
+
+| 配额、重置时间与重置卡 | 个人活动方格图 |
+| --- | --- |
+| ![Codex 配额与重置](docs/screenshots/codex-quota.png) | ![Codex 个人活动](docs/screenshots/codex-activity.png) |
+
+![Codex 最近会话与状态](docs/screenshots/codex-sessions.png)
+
+最近会话的标题与项目名用一整条不透明矩形遮蔽，状态与时间保留。[查看英文截图](README.en.md#screenshots)。
+
+### 系统监控
 
 | 性能概览 | 温度概览 |
 | --- | --- |

@@ -35,7 +35,7 @@ struct ExtensionLiveActivityStandaloneView: View {
     let isHovering: Bool
 
     private var descriptor: AtollLiveActivityDescriptor { payload.descriptor }
-    private var contentHeight: CGFloat { layout.contentHeight }
+    private var contentHeight: CGFloat { descriptor.id == "codex-status" ? layout.outerHeight : layout.contentHeight }
     private var accentColor: Color { descriptor.accentColor.swiftUIColor }
     private var resolvedLeadingContent: AtollTrailingContent {
         resolvedExtensionLeadingContent(for: descriptor)
@@ -94,6 +94,13 @@ struct ExtensionMusicWingView: View {
     }
 
     var body: some View {
+        if descriptor.id == "codex-status", case let .content(content) = trailingRenderable {
+            // The two-line label needs the closed notch's full height, without music-wing padding.
+            ExtensionEdgeContentView(content: content, accent: accentColor, availableWidth: trailingWidth, alignment: .trailing)
+                .scaleEffect(min(1, max(0, notchHeight - 4) / 32), anchor: .trailing)
+                .frame(width: trailingWidth, height: notchHeight, alignment: .trailing)
+                .padding(.trailing, 8)
+        } else {
         VStack(alignment: .trailing, spacing: 6) {
             switch trailingRenderable {
             case let .content(content):
@@ -129,6 +136,7 @@ struct ExtensionMusicWingView: View {
         }
         .onDisappear {
             logExtensionDiagnostics("Hid extension live activity \(payload.descriptor.id) from music wing")
+        }
         }
     }
 }

@@ -4,7 +4,7 @@ import AppKit
 private struct DashboardData: Decodable {
     struct Quota: Decodable { let used: Double; let reset: Double?; let observed: Double }
     struct Cards: Decodable { let count: Int; let observed: Double }
-    struct Session: Decodable, Identifiable { let id: String; let title: String; let project: String; let updated: Double; let status: String; let tool: String }
+    struct Session: Decodable, Identifiable { let id: String; let title: String; let project: String; let updated: Double; let status: String; let tool: String; let redacted: Bool? }
     struct Thermal: Decodable { let values: [String: Double]; let observed: Double }
     struct Usage: Decodable {
         struct Summary: Decodable { let lifetimeTokens: Double?; let peakDailyTokens: Double?; let longestRunningTurnSec: Double?; let currentStreakDays: Int?; let longestStreakDays: Int? }
@@ -44,11 +44,11 @@ struct CodexDashboardView: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {
             HStack {
-                Text(temperatureOnly ? "温度" : "Codex")
+                BtollText(temperatureOnly ? "温度" : "Codex")
                     .font(.system(size: 16, weight: .semibold, design: .rounded))
                 Spacer()
                 Circle().fill(stale ? Color.orange : mint).frame(width: 5, height: 5)
-                Text(stale ? "数据待刷新" : "实时同步").font(.system(size: 10)).foregroundStyle(.white.opacity(0.45))
+                BtollText(stale ? "数据待刷新" : "实时同步").font(.system(size: 10)).foregroundStyle(.white.opacity(0.45))
             }
             HStack(spacing: 16) {
                 ForEach(Array((temperatureOnly ? ["温度概览", "核心明细", "风扇控制"] : ["概览", "活动", "会话"]).enumerated()), id: \.offset) { index, title in
@@ -56,14 +56,14 @@ struct CodexDashboardView: View {
                         withAnimation(.easeInOut(duration: 0.2)) { selectedPage = index }
                     } label: {
                         VStack(spacing: 5) {
-                            Text(title).font(.system(size: 12, weight: selectedPage == index ? .semibold : .regular))
+                            BtollText(title).font(.system(size: 12, weight: selectedPage == index ? .semibold : .regular))
                                 .foregroundStyle(selectedPage == index ? .white : .white.opacity(0.4))
                             Capsule().fill(selectedPage == index ? mint : .clear).frame(height: 2)
                         }.fixedSize(horizontal: true, vertical: false)
                     }.buttonStyle(.plain)
                 }
                 Spacer()
-                Text("左右滑动切换").font(.system(size: 10)).foregroundStyle(.white.opacity(0.3))
+                BtollText("左右滑动切换").font(.system(size: 10)).foregroundStyle(.white.opacity(0.3))
             }
             GeometryReader { geo in
                 ScrollView(.horizontal) {
@@ -75,7 +75,7 @@ struct CodexDashboardView: View {
                         } else {
                             VStack(alignment:.leading,spacing:12) {
                                 quotaPanel
-                                Text("额度、重置卡与重置时间均来自当前账户。").font(.system(size:10)).foregroundStyle(.white.opacity(0.35))
+                                BtollText("额度、重置卡与重置时间均来自当前账户。").font(.system(size:10)).foregroundStyle(.white.opacity(0.35))
                             }.frame(width:geo.size.width,alignment:.topLeading).id(0)
                             activityPanel.frame(width:geo.size.width,alignment:.topLeading).id(1)
                             ScrollView(.vertical) { sessionsPanel }.scrollIndicators(.hidden).frame(width:geo.size.width,height:geo.size.height).id(2)
@@ -128,19 +128,19 @@ struct CodexDashboardView: View {
                 VStack(alignment: .leading, spacing: 4) {
                     caption("每周额度剩余")
                     HStack(alignment: .firstTextBaseline, spacing: 3) {
-                        Text(data?.quota.map { String(Int((100 - $0.used).rounded())) } ?? "—").font(.system(size: 38, weight: .semibold, design: .rounded))
-                        Text("%").font(.system(size: 17)).foregroundStyle(.white.opacity(0.5))
+                        BtollText(data?.quota.map { String(Int((100 - $0.used).rounded())) } ?? "—").font(.system(size: 38, weight: .semibold, design: .rounded))
+                        BtollText("%").font(.system(size: 17)).foregroundStyle(.white.opacity(0.5))
                     }
                 }.frame(maxWidth: .infinity, alignment: .leading)
                 VStack(alignment: .leading, spacing: 6) {
                     caption("额度重置")
-                    Text(resetDate).font(.system(size: 15, weight: .medium)).monospacedDigit()
-                    Text(countdown).font(.system(size: 11)).foregroundStyle(.white.opacity(0.45))
+                    BtollText(resetDate).font(.system(size: 15, weight: .medium)).monospacedDigit()
+                    BtollText(countdown).font(.system(size: 11)).foregroundStyle(.white.opacity(0.45))
                 }.frame(maxWidth: .infinity, alignment: .leading)
                 VStack(alignment: .leading, spacing: 6) {
                     caption("重置卡")
-                    Text(data?.resetCards.map { "\($0.count) 张" } ?? "待同步").font(.system(size: 23, weight: .semibold, design: .rounded))
-                    Text("账户可用数量").font(.system(size: 10)).foregroundStyle(.white.opacity(0.4))
+                    BtollText(data?.resetCards.map { "\($0.count) 张" } ?? "待同步").font(.system(size: 23, weight: .semibold, design: .rounded))
+                    BtollText("账户可用数量").font(.system(size: 10)).foregroundStyle(.white.opacity(0.4))
                 }.frame(maxWidth: .infinity, alignment: .leading)
             }
             GeometryReader { geo in
@@ -150,17 +150,17 @@ struct CodexDashboardView: View {
                 }
             }.frame(height: 5)
             HStack {
-                Text("\(data?.activeCount ?? 0) 个会话工作中").foregroundStyle(mint)
-                if let count = data?.uncertainCount, count > 0 { Text("· \(count) 个状态待确认").foregroundStyle(.orange) }
+                BtollText("\(data?.activeCount ?? 0) 个会话工作中").foregroundStyle(mint)
+                if let count = data?.uncertainCount, count > 0 { BtollText("· \(count) 个状态待确认").foregroundStyle(.orange) }
                 Spacer()
-                Text(data?.quota.map { "额度更新于 " + time($0.observed) } ?? (error ?? "额度待同步")).foregroundStyle(.white.opacity(0.35))
+                BtollText(data?.quota.map { "额度更新于 " + time($0.observed) } ?? (error ?? "额度待同步")).foregroundStyle(.white.opacity(0.35))
             }.font(.system(size: 10))
         }.padding(16).background(.white.opacity(0.045), in: RoundedRectangle(cornerRadius: 14))
     }
 
     private var activityPanel: some View {
         VStack(alignment: .leading, spacing: 10) {
-            HStack { Text("账户活动").font(.system(size: 12, weight: .semibold)); Spacer(); Text("Codex 个人资料").font(.system(size: 10)).foregroundStyle(.white.opacity(0.4)) }
+            HStack { BtollText("账户活动").font(.system(size: 12, weight: .semibold)); Spacer(); BtollText("Codex 个人资料").font(.system(size: 10)).foregroundStyle(.white.opacity(0.4)) }
             if let profile = data?.profile, let days = profile.dailyUsageBuckets {
                 ActivityGrid(days: days.map { ($0.startDate, $0.tokens) })
                 HStack(spacing: 22) {
@@ -171,26 +171,40 @@ struct CodexDashboardView: View {
                     stat("最长任务", profile.summary.longestRunningTurnSec.map { "\(Int($0 / 3600)) 时 \(Int($0.truncatingRemainder(dividingBy: 3600) / 60)) 分" } ?? "—")
                 }
             } else {
-                Text("个人资料数据暂不可用").font(.system(size: 12)).foregroundStyle(.white.opacity(0.4)).padding(.vertical, 16)
+                BtollText("个人资料数据暂不可用").font(.system(size: 12)).foregroundStyle(.white.opacity(0.4)).padding(.vertical, 16)
             }
         }
     }
 
     private var sessionsPanel: some View {
         VStack(alignment: .leading, spacing: 8) {
-            HStack { Text("最近会话").font(.system(size: 12, weight: .semibold)); Spacer(); Text("本机 · 最近 12 个").font(.system(size: 10)).foregroundStyle(.white.opacity(0.4)) }
+            HStack { BtollText("最近会话").font(.system(size: 12, weight: .semibold)); Spacer(); BtollText("本机 · 最近 12 个").font(.system(size: 10)).foregroundStyle(.white.opacity(0.4)) }
+            VStack(alignment:.leading,spacing:0) {
             ForEach(data?.sessions ?? []) { session in
                 HStack(spacing: 10) {
                     Circle().fill(session.status == "已完成" ? Color.white.opacity(0.25) : session.status == "未运行" ? Color.white.opacity(0.15) : session.status == "状态待确认" ? Color.orange : mint).frame(width: 5, height: 5)
                     VStack(alignment: .leading, spacing: 3) {
+                        if session.redacted == true {
+                            Color.clear.frame(width:210,height:23)
+                        } else {
                         Text(session.title).font(.system(size: 12, weight: .medium)).lineLimit(1)
                         Text(session.project + (session.tool.isEmpty ? "" : " · " + session.tool)).font(.system(size: 10)).foregroundStyle(.white.opacity(0.4)).lineLimit(1)
+                        }
                     }
                     Spacer(minLength: 12)
-                    Text(session.status).font(.system(size: 10)).foregroundStyle(.white.opacity(0.6))
-                    Text(time(session.updated)).font(.system(size: 10)).monospacedDigit().foregroundStyle(.white.opacity(0.3)).frame(width: 42, alignment: .trailing)
+                    BtollText(session.status).font(.system(size: 10)).foregroundStyle(.white.opacity(0.6))
+                    BtollText(time(session.updated)).font(.system(size: 10)).monospacedDigit().foregroundStyle(.white.opacity(0.3)).frame(width: 42, alignment: .trailing)
                 }.padding(.vertical, 7)
                 Rectangle().fill(.white.opacity(0.06)).frame(height: 0.5)
+            }
+            }.overlay(alignment:.topLeading) {
+                if data?.sessions.contains(where:{$0.redacted == true}) == true {
+                    GeometryReader { geo in
+                        RoundedRectangle(cornerRadius:4).fill(Color(white:0.15))
+                            .frame(width:max(0,geo.size.width-(BtollL10n.isEnglish ? 190:150)-14),height:geo.size.height)
+                            .offset(x:14)
+                    }.allowsHitTesting(false)
+                }
             }
         }
     }
@@ -208,15 +222,15 @@ struct CodexDashboardView: View {
             }
             HStack {
                 Image(systemName: "fanblades").foregroundStyle(mint)
-                Text(data?.temperatures?.values["F0Ac"].map { "风扇  \(Int($0)) RPM" } ?? "风扇转速待同步").font(.system(size: 13)).monospacedDigit()
+                BtollText(data?.temperatures?.values["F0Ac"].map { "风扇  \(Int($0)) RPM" } ?? "风扇转速待同步").font(.system(size: 13)).monospacedDigit()
                 Spacer()
-                Text("AppleSMC · 实时采集").font(.system(size:10)).foregroundStyle(.white.opacity(0.4))
+                BtollText("AppleSMC · 实时采集").font(.system(size:10)).foregroundStyle(.white.opacity(0.4))
             }
             Button { toggleCoreDetails() } label: {
-                HStack { Text(showCoreDetails ? "收起核心温度" : "展开核心温度");Spacer();Image(systemName:showCoreDetails ? "chevron.up" : "chevron.down") }.font(.system(size:11)).foregroundStyle(.white.opacity(0.65)).contentShape(Rectangle())
+                HStack { BtollText(showCoreDetails ? "收起核心温度" : "展开核心温度");Spacer();Image(systemName:showCoreDetails ? "chevron.up" : "chevron.down") }.font(.system(size:11)).foregroundStyle(.white.opacity(0.65)).contentShape(Rectangle())
             }.buttonStyle(.plain)
             if showCoreDetails { coreSensorsPanel }
-            Text("核心平均与最高值由本机核心区域传感器的实时读数计算。").font(.system(size:10)).foregroundStyle(.white.opacity(0.4))
+            BtollText("核心平均与最高值由本机核心区域传感器的实时读数计算。").font(.system(size:10)).foregroundStyle(.white.opacity(0.4))
         }.padding(18).background(.white.opacity(0.045),in:RoundedRectangle(cornerRadius:14))
     }
 
@@ -228,7 +242,7 @@ struct CodexDashboardView: View {
                         .padding(10).background(.white.opacity(0.045),in:RoundedRectangle(cornerRadius:12)).help(sensor.name+" · "+sensor.key)
                 }
             }
-            Text("本机 SMC 实测 · 一个核心区域可能有多个温度传感器").font(.system(size:10)).foregroundStyle(.white.opacity(0.35))
+            BtollText("本机 SMC 实测 · 一个核心区域可能有多个温度传感器").font(.system(size:10)).foregroundStyle(.white.opacity(0.35))
         }
     }
 
@@ -236,26 +250,26 @@ struct CodexDashboardView: View {
         VStack(alignment:.leading,spacing:12) {
             HStack {
                 Image(systemName:"fanblades").font(.system(size:26)).foregroundStyle(mint)
-                Text(data?.temperatures?.values["F0Ac"].map { "\(Int($0))" } ?? "—").font(.system(size:38,weight:.semibold,design:.rounded)).monospacedDigit()
-                Text("RPM").font(.system(size:13)).foregroundStyle(.white.opacity(0.4))
+                BtollText(data?.temperatures?.values["F0Ac"].map { "\(Int($0))" } ?? "—").font(.system(size:38,weight:.semibold,design:.rounded)).monospacedDigit()
+                BtollText("RPM").font(.system(size:13)).foregroundStyle(.white.opacity(0.4))
                 Spacer()
-                Text(fanStatus).font(.system(size:11)).foregroundStyle(mint)
+                BtollText(fanStatus).font(.system(size:11)).foregroundStyle(mint)
             }
             HStack(spacing:10) {
-                Button("系统自动") { setFan("auto") }.buttonStyle(.plain).foregroundStyle(.white).padding(.horizontal,12).padding(.vertical,7).background(Color.white.opacity(0.1),in:RoundedRectangle(cornerRadius:8))
-                Button("强力散热 10 分钟") { setFan("boost") }.buttonStyle(.plain).foregroundStyle(mint).padding(.horizontal,12).padding(.vertical,7).background(mint.opacity(0.12),in:RoundedRectangle(cornerRadius:8))
+                Button(BtollL10n.text("系统自动")) { setFan("auto") }.buttonStyle(.plain).foregroundStyle(.white).padding(.horizontal,12).padding(.vertical,7).background(Color.white.opacity(0.1),in:RoundedRectangle(cornerRadius:8))
+                Button(BtollL10n.text("强力散热 10 分钟")) { setFan("boost") }.buttonStyle(.plain).foregroundStyle(mint).padding(.horizontal,12).padding(.vertical,7).background(mint.opacity(0.12),in:RoundedRectangle(cornerRadius:8))
                 Spacer()
                 if data?.fanControl?.backend != "bsstoll-smc" || data?.fanControl?.unavailable == true {
-                    Button("安装控制服务") { Task { await BsstollFanController.install() } }.buttonStyle(.plain).foregroundStyle(.white.opacity(0.6))
+                    Button(BtollL10n.text("安装控制服务")) { Task { await BsstollFanController.install() } }.buttonStyle(.plain).foregroundStyle(.white.opacity(0.6))
                 }
             }
             VStack(alignment:.leading,spacing:9) {
                 HStack {
-                    Text("自定义转速").font(.system(size:12,weight:.semibold))
-                    Text("\(Int(fanMinimum))–\(Int(fanMaximum)) RPM").font(.system(size:10)).foregroundStyle(.white.opacity(0.4))
+                    BtollText("自定义转速").font(.system(size:12,weight:.semibold))
+                    BtollText("\(Int(fanMinimum))–\(Int(fanMaximum)) RPM").font(.system(size:10)).foregroundStyle(.white.opacity(0.4))
                     Spacer()
                     if data?.fanControl?.mode == "manual", let target=data?.fanControl?.target {
-                        Text("当前目标 \(Int(target)) RPM").font(.system(size:10)).foregroundStyle(mint)
+                        BtollText("当前目标 \(Int(target)) RPM").font(.system(size:10)).foregroundStyle(mint)
                     }
                 }
                 HStack(spacing:8) {
@@ -271,19 +285,19 @@ struct CodexDashboardView: View {
                         .background(.white.opacity(0.08),in:RoundedRectangle(cornerRadius:7))
                         .onSubmit { applyCustomFan() }
                         .accessibilityLabel("自定义风扇转速")
-                    Text("RPM").font(.system(size:10)).foregroundStyle(.white.opacity(0.4))
-                    Button("应用自定义转速") { applyCustomFan() }
+                    BtollText("RPM").font(.system(size:10)).foregroundStyle(.white.opacity(0.4))
+                    Button(BtollL10n.text("应用自定义转速")) { applyCustomFan() }
                         .buttonStyle(.plain).font(.system(size:11,weight:.medium)).foregroundStyle(customRPMIsValid ? mint : .gray)
                         .padding(.horizontal,12).padding(.vertical,8).background(mint.opacity(customRPMIsValid ? 0.12 : 0.03),in:RoundedRectangle(cornerRadius:8))
                         .disabled(!customRPMIsValid)
                 }
             }
-            Text("自定义转速保持 10 分钟后恢复系统自动；可随时点击“系统自动”提前结束。").font(.system(size:10)).foregroundStyle(.white.opacity(0.35))
+            BtollText("自定义转速保持 10 分钟后恢复系统自动；可随时点击“系统自动”提前结束。").font(.system(size:10)).foregroundStyle(.white.opacity(0.35))
         }.padding(16).background(.white.opacity(0.045),in:RoundedRectangle(cornerRadius:14))
             .disabled(data?.temperatures?.values["FNum"] == 0)
             .overlay(alignment:.bottom) {
                 if data?.temperatures?.values["FNum"] == 0 {
-                    Text("本机为无风扇机型，无需风扇控制").font(.system(size:11)).padding(10).background(.black,in:Capsule())
+                    BtollText("本机为无风扇机型，无需风扇控制").font(.system(size:11)).padding(10).background(.black,in:Capsule())
                 }
             }
     }
@@ -296,8 +310,8 @@ struct CodexDashboardView: View {
             applyCustomFan()
         } label: {
             HStack(spacing:6) {
-                Text(title).font(.system(size:11,weight:.medium))
-                Text("\(Int(rpm)) RPM").font(.system(size:10,design:.monospaced)).opacity(0.6)
+                BtollText(title).font(.system(size:11,weight:.medium))
+                BtollText("\(Int(rpm)) RPM").font(.system(size:10,design:.monospaced)).opacity(0.6)
             }.padding(.horizontal,12).padding(.vertical,7)
                 .foregroundStyle(selected ? mint : .white)
                 .background(selected ? mint.opacity(0.15) : .white.opacity(0.07),in:RoundedRectangle(cornerRadius:8))
@@ -332,14 +346,14 @@ struct CodexDashboardView: View {
         BtollTemperatureRing(title:title,value:stale ? nil : value)
     }
     private func mean(_ prefix: String) -> Double? { let values = data?.temperatures?.values.filter { $0.key.hasPrefix(prefix) && $0.value > 5 && $0.value < 125 }.map(\.value) ?? []; return values.isEmpty ? nil : values.reduce(0,+) / Double(values.count) }
-    private func caption(_ text: String) -> some View { Text(text).font(.system(size: 10)).foregroundStyle(.white.opacity(0.45)) }
-    private func stat(_ title: String, _ value: String) -> some View { VStack(alignment: .leading, spacing: 4) { Text(value).font(.system(size: 14, weight: .semibold, design: .rounded)); caption(title) }.frame(maxWidth: .infinity, alignment: .leading) }
+    private func caption(_ text: String) -> some View { BtollText(text).font(.system(size: 10)).foregroundStyle(.white.opacity(0.45)) }
+    private func stat(_ title: String, _ value: String) -> some View { VStack(alignment: .leading, spacing: 4) { BtollText(value).font(.system(size: 14, weight: .semibold, design: .rounded)); caption(title) }.frame(maxWidth: .infinity, alignment: .leading) }
     private var remaining: Double { max(0, min(1, 1 - (data?.quota?.used ?? 100) / 100)) }
     private var quotaColor: Color { remaining > 0.5 ? mint : remaining > 0.2 ? .orange : .red }
-    private var resetDate: String { guard let reset = data?.quota?.reset else { return "待同步" }; let f = DateFormatter(); f.locale = Locale(identifier:"zh_CN"); f.timeZone = TimeZone(identifier:"Asia/Shanghai"); f.dateFormat = "M月d日 HH:mm"; return f.string(from: Date(timeIntervalSince1970:reset)) }
+    private var resetDate: String { guard let reset = data?.quota?.reset else { return "待同步" }; let f = DateFormatter(); f.locale = Locale(identifier:BtollL10n.isEnglish ? "en_US_POSIX":"zh_CN"); f.timeZone = TimeZone(identifier:"Asia/Shanghai"); f.dateFormat = BtollL10n.isEnglish ? "MMM d, HH:mm":"M月d日 HH:mm"; return f.string(from: Date(timeIntervalSince1970:reset)) }
     private var countdown: String { guard let reset = data?.quota?.reset else { return "" }; let minutes = max(0, Int((reset-Date().timeIntervalSince1970)/60)); return "还有 \(minutes/1440) 天 \(minutes%1440/60) 时 \(minutes%60) 分" }
     private func time(_ milliseconds: Double) -> String { let f=DateFormatter(); f.dateFormat="HH:mm"; f.timeZone=TimeZone(identifier:"Asia/Shanghai"); return f.string(from:Date(timeIntervalSince1970:milliseconds/1000)) }
-    private func compact(_ value: Double?) -> String { guard let value else { return "—" }; return value.formatted(.number.notation(.compactName).precision(.fractionLength(0...1))) }
+    private func compact(_ value: Double?) -> String { guard let value else { return "—" }; return value.formatted(.number.notation(.compactName).precision(.fractionLength(0...1)).locale(Locale(identifier:BtollL10n.isEnglish ? "en_US":"zh_CN"))) }
 }
 
 private struct ActivityGrid: View {
@@ -374,13 +388,13 @@ private struct ActivityGrid: View {
                             ForEach(0..<7,id:\.self) { day in
                                 let date=allDates[week*7+day]
                                 RoundedRectangle(cornerRadius:2).fill(fill(date,values:values,sorted:sorted)).frame(width:cell,height:cell)
-                                    .help("\(key(date)) · \(values[key(date)].map{Int($0).formatted()} ?? "无返回记录") Token")
+                                    .help("\(key(date)) · \(values[key(date)].map{Int($0).formatted()} ?? BtollL10n.text("无返回记录")) Token")
                             }
                         }
                     }
                 }
             }.frame(height:105)
-            HStack { Text("过去一年 · 按每日 Token 用量"); Spacer(); Text("少"); ForEach(0..<4) { i in RoundedRectangle(cornerRadius:1).fill(Color.green.opacity(Double(i+1)/4)).frame(width:8,height:8) }; Text("多") }.font(.system(size:9)).foregroundStyle(.white.opacity(0.35))
+            HStack { BtollText("过去一年 · 按每日 Token 用量"); Spacer(); BtollText("少"); ForEach(0..<4) { i in RoundedRectangle(cornerRadius:1).fill(Color.green.opacity(Double(i+1)/4)).frame(width:8,height:8) }; BtollText("多") }.font(.system(size:9)).foregroundStyle(.white.opacity(0.35))
         }
     }
 }

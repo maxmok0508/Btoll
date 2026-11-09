@@ -1100,6 +1100,7 @@ struct GeneralSettings: View {
                 Text("Minimalistic mode focuses on media controls and system HUDs, hiding all extra features for a clean, focused experience. Automatically enables simpler animations.")
             }
 
+            BtollLanguageSection()
             BtollWorkAnimationSection()
 
             Section {
