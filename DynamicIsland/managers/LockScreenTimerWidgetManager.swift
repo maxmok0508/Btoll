@@ -21,7 +21,6 @@ import Combine
 import Defaults
 import SwiftUI
 import AppKit
-import SkyLightWindow
 import QuartzCore
 
 @MainActor
@@ -43,11 +42,13 @@ final class LockScreenTimerWidgetManager {
     private var isPreviewing: Bool = false
 
     private init() {
+        guard AppRuntimeEnvironment.supportsLockScreenWidgets else { return }
         observeTimerState()
         observeDefaults()
     }
 
     func handleLockStateChange(isLocked: Bool) {
+        guard AppRuntimeEnvironment.supportsLockScreenWidgets else { return }
         self.isLocked = isLocked
         if isLocked {
             updateVisibility()
@@ -57,6 +58,7 @@ final class LockScreenTimerWidgetManager {
     }
 
     func setPreviewMode(_ enabled: Bool) {
+        guard AppRuntimeEnvironment.supportsLockScreenWidgets else { return }
         guard isPreviewing != enabled else { return }
         isPreviewing = enabled
         updateVisibility()
@@ -141,10 +143,12 @@ final class LockScreenTimerWidgetPanelManager {
     private var workspaceObservers: [NSObjectProtocol] = []
 
     private init() {
+        guard AppRuntimeEnvironment.supportsLockScreenWidgets else { return }
         registerScreenChangeObservers()
     }
 
     func showWidget() {
+        guard AppRuntimeEnvironment.supportsLockScreenWidgets else { return }
         guard let screen = currentScreen() else { return }
         let window = ensureWindow()
         let frame = targetFrame(on: screen)
@@ -241,7 +245,6 @@ final class LockScreenTimerWidgetPanelManager {
         window = newWindow
 
         if !hasDelegated {
-            SkyLightOperator.shared.delegateWindow(newWindow)
             hasDelegated = true
         }
 

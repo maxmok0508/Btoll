@@ -20,6 +20,9 @@ import Foundation
 
 /// Runtime context flags used to keep the app's launch deterministic on CI.
 enum AppRuntimeEnvironment {
+    /// This bsstoll build excludes all lock-screen presentation.
+    static let supportsLockScreenWidgets = false
+
     /// `true` only in DEBUG builds launched by XCUITest (`--uitesting`); always false in Release.
     static let isUITesting: Bool = {
         #if DEBUG

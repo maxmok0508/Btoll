@@ -164,6 +164,15 @@ class DynamicIslandViewModel: NSObject, ObservableObject {
             }
             .store(in: &cancellables)
 
+        coordinator.$currentView.combineLatest(coordinator.$selectedExtensionExperienceID)
+            .receive(on: RunLoop.main)
+            .sink { [weak self] _, _ in
+                guard let self, self.notchState == .open else { return }
+                let target = self.calculateDynamicNotchSize()
+                self.notchSize = target
+                AppDelegate.shared?.ensureWindowSize(addShadowPadding(to: target, isMinimalistic: Defaults[.enableMinimalisticUI]), animated: false, force: true)
+            }.store(in: &cancellables)
+
         // Observe settings + lyrics changes to dynamically resize the notch
         let enableLyricsPublisher = Defaults.publisher(.enableLyrics).map { $0.newValue }
 
@@ -360,6 +369,14 @@ class DynamicIslandViewModel: NSObject, ObservableObject {
     private func calculateDynamicNotchSize() -> CGSize {
         let baseSize = Defaults[.enableMinimalisticUI] ? minimalisticOpenNotchSize(isDynamicIslandMode: shouldUseDynamicIslandMode(for: screen)) : openNotchSize
         var adjustedSize = baseSize
+
+        if coordinator.currentView == .extensionExperience,
+           let id = coordinator.selectedExtensionExperienceID,
+           let payload = ExtensionNotchExperienceManager.shared.payload(experienceID: id),
+           let height = customAtollDashboardHeight(id: id, bundleIdentifier: payload.bundleIdentifier) {
+            adjustedSize.height = height
+            return adjustedSize
+        }
 
         if coordinator.currentView == .notes || coordinator.currentView == .clipboard {
             let preferred = coordinator.notesLayoutState.preferredHeight

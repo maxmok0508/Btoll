@@ -188,20 +188,8 @@ struct ContentView: View {
             return CGSize(width: baseSize.width, height: preferredHeight)
         }
         
-        guard coordinator.currentView == .stats else {
-            return baseSize
-        }
-        
-        let rows = statsRowCount()
-        if rows <= 1 {
-            return baseSize
-        }
-        
-        let additionalRows = max(rows - 1, 0)
-        let extraHeight = CGFloat(additionalRows) * statsAdditionalRowHeight
-        return CGSize(width: baseSize.width, height: baseSize.height + extraHeight)
+        return coordinator.currentView == .stats ? CGSize(width: baseSize.width, height: 380) : baseSize
     }
-    
 
     @State private var hoverTask: Task<Void, Never>?
     @State private var isHovering: Bool = false
@@ -718,6 +706,12 @@ struct ContentView: View {
 
     private var rootBodyView: some View {
         ZStack(alignment: .top) {
+            if !isDynamicIslandMode && !shouldHideUntilHover && !vm.hideOnClosed {
+                Rectangle().fill(.black)
+                    .frame(width:vm.closedNotchSize.width,height:2)
+                    .allowsHitTesting(false)
+                    .transaction { $0.animation = nil }
+            }
             configuredMainLayout
         }
         .frame(
@@ -2202,6 +2196,8 @@ struct ContentView: View {
     }
 
     private func extensionTabPreferredHeight(baseSize: CGSize) -> CGFloat? {
+        if let payload = currentExtensionTabPayload(),
+           let height = customAtollDashboardHeight(id: payload.id, bundleIdentifier: payload.bundleIdentifier) { return height }
         guard let preferred = currentExtensionTabPayload()?.descriptor.tab?.preferredHeight else {
             return nil
         }

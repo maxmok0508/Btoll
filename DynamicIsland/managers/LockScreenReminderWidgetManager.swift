@@ -30,6 +30,7 @@ final class LockScreenReminderWidgetManager: ObservableObject {
     private var cancellables = Set<AnyCancellable>()
 
     private init() {
+        guard AppRuntimeEnvironment.supportsLockScreenWidgets else { return }
         observeDefaults()
         observeLockState()
         observeReminderSnapshots()
@@ -55,6 +56,7 @@ final class LockScreenReminderWidgetManager: ObservableObject {
     }
 
     private func handleLockStateChange(isLocked: Bool) {
+        guard AppRuntimeEnvironment.supportsLockScreenWidgets else { return }
         Logger.log("LockScreenReminderWidgetManager: handleLockStateChange(isLocked: \(isLocked))", category: .lifecycle)
         guard Defaults[.enableLockScreenReminderWidget] else {
             LockScreenReminderWidgetPanelManager.shared.hide()

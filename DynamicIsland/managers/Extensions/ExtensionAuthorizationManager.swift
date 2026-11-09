@@ -147,6 +147,7 @@ final class ExtensionAuthorizationManager: ObservableObject {
     }
 
     func canProcessLockScreenRequest(from bundleIdentifier: String) -> Bool {
+        guard AppRuntimeEnvironment.supportsLockScreenWidgets else { return false }
         guard preflight(bundleIdentifier: bundleIdentifier, scope: .lockScreenWidgets) else { return false }
         guard areLockScreenWidgetsEnabled else { return false }
         return true

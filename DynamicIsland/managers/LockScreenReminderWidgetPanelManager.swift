@@ -18,7 +18,6 @@
 
 import AppKit
 import SwiftUI
-import SkyLightWindow
 import QuartzCore
 import Defaults
 
@@ -36,10 +35,12 @@ final class LockScreenReminderWidgetPanelManager {
     }
 
     private init() {
+        guard AppRuntimeEnvironment.supportsLockScreenWidgets else { return }
         registerScreenChangeObservers()
     }
 
     func show(with snapshot: LockScreenReminderWidgetSnapshot) {
+        guard AppRuntimeEnvironment.supportsLockScreenWidgets else { return }
         render(snapshot: snapshot, makeVisible: true)
     }
 
@@ -68,6 +69,7 @@ final class LockScreenReminderWidgetPanelManager {
     }
 
     private func render(snapshot: LockScreenReminderWidgetSnapshot, makeVisible: Bool) {
+        guard AppRuntimeEnvironment.supportsLockScreenWidgets else { return }
         guard let screen = currentScreen() else { return }
         if !makeVisible, window == nil {
             return
@@ -112,7 +114,6 @@ final class LockScreenReminderWidgetPanelManager {
 
         window = newWindow
         if !hasDelegated {
-            SkyLightOperator.shared.delegateWindow(newWindow)
             hasDelegated = true
         }
         return newWindow

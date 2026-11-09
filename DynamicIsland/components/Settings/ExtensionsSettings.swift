@@ -68,7 +68,6 @@ struct ExtensionsSettingsView: View {
                 Defaults.Toggle(String(localized:"Allow extension live activities"), key: .enableExtensionLiveActivities)
                     .settingsHighlight(id: highlightID("Allow extension live activities"))
                 
-                                Defaults.Toggle(String(localized:"Allow extension lock screen widgets"), key: .enableExtensionLockScreenWidgets)
                     .settingsHighlight(id: highlightID("Allow extension lock screen widgets"))
 
                                                 Defaults.Toggle(String(localized:"Allow extension notch experiences"), key: .enableExtensionNotchExperiences)
@@ -93,11 +92,11 @@ struct ExtensionsSettingsView: View {
             Text("Global Settings")
         } footer: {
             if Defaults[.enableThirdPartyExtensions] {
-                Text("Third-party apps using AtollExtensionKit can display live activities, lock screen widgets, and dedicated notch experiences. Toggle features above or manage individual app permissions below.")
+                Text("Third-party apps using AtollExtensionKit can display live activities and dedicated notch experiences. Toggle features above or manage individual app permissions below.")
                     .font(.caption)
                     .foregroundStyle(.secondary)
             } else {
-                Text("Enable extensions to allow third-party apps to display live activities and lock screen widgets in Atoll.")
+                Text("Enable extensions to allow third-party apps to display live activities and dedicated notch experiences in Btoll.")
                     .font(.caption)
                     .foregroundStyle(.secondary)
             }
@@ -337,21 +336,6 @@ private struct ExtensionEntryRow: View {
             .font(.caption)
             .disabled(!authManager.areLiveActivitiesEnabled)
             
-            Toggle("Lock Screen Widgets", isOn: Binding(
-                get: { entry.allowedScopes.contains(.lockScreenWidgets) },
-                set: { enabled in
-                    var newScopes = entry.allowedScopes
-                    if enabled {
-                        newScopes.insert(.lockScreenWidgets)
-                    } else {
-                        newScopes.remove(.lockScreenWidgets)
-                    }
-                    authManager.updateAllowedScopes(bundleIdentifier: entry.bundleIdentifier, allowedScopes: newScopes)
-                }
-            ))
-            .font(.caption)
-            .disabled(!authManager.areLockScreenWidgetsEnabled)
-
             Toggle("Notch Experiences", isOn: Binding(
                 get: { entry.allowedScopes.contains(.notchExperiences) },
                 set: { enabled in
@@ -467,11 +451,6 @@ private struct ExtensionEntryRow: View {
                 liveActivityManager.dismissAll(for: entry.bundleIdentifier)
             }
             .disabled(!hasLiveActivities)
-
-            Button("Reset Lock Screen Widgets") {
-                widgetManager.dismissAll(for: entry.bundleIdentifier)
-            }
-            .disabled(!hasWidgets)
 
             Button("Reset Notch Experiences") {
                 notchExperienceManager.dismissAll(for: entry.bundleIdentifier)

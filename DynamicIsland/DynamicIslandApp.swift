@@ -22,7 +22,6 @@ import Defaults
 import KeyboardShortcuts
 import Sparkle
 import SwiftUI
-import SkyLightWindow
 
 @main
 struct DynamicNotchApp: App {
@@ -40,7 +39,7 @@ struct DynamicNotchApp: App {
         // The AtollUpdaterDelegate overrides the feed URL at runtime
         // based on the user's selected update channel.
         updaterController = SPUStandardUpdaterController(
-            startingUpdater: !AppRuntimeEnvironment.isUITesting,
+            startingUpdater: false, // Custom bsstoll builds update through their installer, not the upstream Atoll feed.
             updaterDelegate: updaterDelegate, userDriverDelegate: nil)
 
         // Initialize the settings window controller with the updater controller
@@ -114,7 +113,6 @@ class AppDelegate: NSObject, NSApplicationDelegate {
     let bluetoothAudioManager = BluetoothAudioManager.shared  // NEW: Bluetooth audio detection
     let idleAnimationManager = IdleAnimationManager.shared  // NEW: Custom idle animations
     let downloadManager = DownloadManager.shared  // NEW: Chromium downloads detection
-    let lockScreenPanelManager = LockScreenPanelManager.shared  // NEW: Lock screen music panel
     let mediaControlsStateCoordinator = MediaControlsStateCoordinator.shared
     let systemTimerBridge = SystemTimerBridge.shared
     let extensionXPCServiceHost = ExtensionXPCServiceHost.shared
@@ -163,7 +161,25 @@ class AppDelegate: NSObject, NSApplicationDelegate {
     }
 
     func application(_ application: NSApplication, open urls: [URL]) {
-        _ = handleIncomingShelfURLs(urls)
+        let remaining = urls.filter { url in
+            if url.scheme == "bsstoll", url.host == "settings" {
+                SettingsWindowController.shared.showWindow()
+                return false
+            }
+            if url.scheme == "bsstoll", url.host == "performance" {
+                coordinator.currentView = .stats
+                if Defaults[.showOnAllDisplays],
+                   let screen = NSScreen.screens.first(where: { $0.frame.contains(NSEvent.mouseLocation) }),
+                   let target = viewModels[screen] {
+                    target.open()
+                } else {
+                    vm.open()
+                }
+                return false
+            }
+            return !BsstollFanController.handle(url)
+        }
+        _ = handleIncomingShelfURLs(remaining)
     }
 
     func application(_ sender: NSApplication, openFile filename: String) -> Bool {
@@ -240,6 +256,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
     }
     
     func applicationWillTerminate(_ notification: Notification) {
+        BsstollFanController.restoreForTermination()
         let userInfo: [String: Any] = [
             AtollDistributedNotifications.UserInfoKey.sourcePID: NSNumber(value: ProcessInfo.processInfo.processIdentifier)
         ]
@@ -276,7 +293,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
 
     @objc func onScreenUnlocked(_: Notification) {
         print("Screen unlocked")
-        DispatchQueue.main.asyncAfter(deadline: .now() + 1.0) { [weak self] in
+        DispatchQueue.main.async { [weak self] in
             guard let self = self else { return }
             self.restoreWindowsAfterLock()
             self.adjustWindowPosition(changeAlpha: true)
@@ -382,13 +399,9 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         )
         
         window.orderFrontRegardless()
-        // Pin above every space (fullscreen included) only for "Never hide"; the
-        // hide options leave the window on the collectionBehavior path so
-        // FullscreenMediaDetector can hide it. See NotchSpaceManager.
         if Defaults[.hideNotchOption] == .never {
             NotchSpaceManager.shared.notchSpace.windows.insert(window)
         }
-        //SkyLightOperator.shared.delegateWindow(window)
         return window
     }
 
@@ -506,6 +519,11 @@ class AppDelegate: NSObject, NSApplicationDelegate {
             baseSize.height = min(screenHeight * maxFraction, max(300, screenHeight * maxFraction))
         }
         
+        if coordinator.currentView == .extensionExperience,
+           let id = coordinator.selectedExtensionExperienceID,
+           let payload = ExtensionNotchExperienceManager.shared.payload(experienceID: id),
+           let height = customAtollDashboardHeight(id: id, bundleIdentifier: payload.bundleIdentifier) { baseSize.height = height }
+
         let adjustedContentSize = statsAdjustedNotchSize(
             from: baseSize,
             isStatsTabActive: coordinator.currentView == .stats,
@@ -587,10 +605,10 @@ class AppDelegate: NSObject, NSApplicationDelegate {
             deliverImmediately: true
         )
 
-        LockScreenLiveActivityWindowManager.shared.configure(viewModel: vm)
         LockScreenManager.shared.configure(viewModel: vm)
         extensionXPCServiceHost.start()
         extensionRPCServer.start()
+        BsstollPortableSetup.start()
         
         // Migrate legacy progress bar settings
         Defaults.Keys.migrateProgressBarStyle()
@@ -672,7 +690,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         // Observe tab changes - use immediate resize to keep the notch pinned
         // Deferred to next run loop tick because @Published fires on willSet,
         // so coordinator.currentView still holds the OLD value at emission time.
-        coordinator.$currentView.sink { [weak self] _ in
+        coordinator.$currentView.combineLatest(coordinator.$selectedExtensionExperienceID).sink { [weak self] _, _ in
             DispatchQueue.main.async {
                 self?.updateWindowSizeForTabSwitch()
             }
@@ -772,8 +790,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
             }
         }.store(in: &cancellables)
 
-        // Pin/unpin the notch above all spaces when the hide option changes:
-        // "Never hide" joins the max-level CGSSpace, the hide options leave it.
+        // Reassert the original notch Space membership when visibility changes.
         Defaults.publisher(.hideNotchOption, options: []).sink { [weak self] _ in
             Task { @MainActor [weak self] in
                 self?.syncNotchSpaceMembership()
@@ -933,7 +950,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         previousScreens = NSScreen.screens
 
         // Skip weather under UI testing: prepareLocationAccess prompts for Location.
-        if Defaults[.enableLockScreenWeatherWidget] && !AppRuntimeEnvironment.isUITesting {
+        if AppRuntimeEnvironment.supportsLockScreenWidgets && Defaults[.enableLockScreenWeatherWidget] && !AppRuntimeEnvironment.isUITesting {
             LockScreenWeatherManager.shared.prepareLocationAccess()
             Task { @MainActor in
                 await LockScreenWeatherManager.shared.refresh(force: true)
@@ -942,8 +959,6 @@ class AppDelegate: NSObject, NSApplicationDelegate {
 
         // Warm up the lock screen timer widget manager so it can observe timer/default
         // changes immediately instead of waiting for the first lock event.
-        let timerWidgetManager = LockScreenTimerWidgetManager.shared
-        timerWidgetManager.handleLockStateChange(isLocked: LockScreenManager.shared.currentLockStatus)
 
     }
 

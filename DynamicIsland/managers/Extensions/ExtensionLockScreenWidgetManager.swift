@@ -35,6 +35,7 @@ final class ExtensionLockScreenWidgetManager: ObservableObject {
     private let currentProcessID = ProcessInfo.processInfo.processIdentifier
 
     private init() {
+        guard AppRuntimeEnvironment.supportsLockScreenWidgets else { return }
         activeWidgets = eventBridge.loadPersistedLockScreenWidgets()
         sortWidgets()
         presentationController = ExtensionLockScreenWidgetPresentationController(manager: self)

@@ -163,3 +163,27 @@ COMPREHENSIVE_DOCUMENTATION.md
 implementation_plan.md
 walkthrough.md
 TemporaryAssets/
+
+# Btoll portable builds and local/private state
+.build.noindex/
+*.noindex/
+dist/
+portable/Bridge/node
+portable/Bridge/metadata-reader
+portable/Bridge/temperature-reader
+portable/Bridge/manifest.json
+.env
+.env.*
+!.env.example
+*.sqlite*
+*.db
+dashboard.json
+fan-state.json
+installed-manifest.json
+.codex/
+!scripts/build-btoll.sh
+!scripts/build_btoll.py
+!scripts/test-btoll.sh
+
+__pycache__/
+*.pyc

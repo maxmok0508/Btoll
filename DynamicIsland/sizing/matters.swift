@@ -212,27 +212,7 @@ func statsAdjustedNotchSize(
         return baseSize
     }
 
-    let enabledGraphsCount = [
-        Defaults[.showCpuGraph],
-        Defaults[.showMemoryGraph],
-        Defaults[.showGpuGraph],
-        Defaults[.showNetworkGraph],
-        Defaults[.showDiskGraph]
-    ].filter { $0 }.count
-
-    guard enabledGraphsCount >= 4 else {
-        return baseSize
-    }
-
-    let clampedProgress = max(0, min(secondRowProgress, 1))
-    guard clampedProgress > 0 else {
-        return baseSize
-    }
-
-    var adjustedSize = baseSize
-    let extraHeight = (statsSecondRowContentHeight + statsGridSpacingHeight) * clampedProgress
-    adjustedSize.height += extraHeight
-    return adjustedSize
+    return CGSize(width: baseSize.width, height: 380)
 }
 
 func notchShadowPaddingValue(isMinimalistic: Bool) -> CGFloat {

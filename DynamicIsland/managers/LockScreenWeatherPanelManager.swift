@@ -18,7 +18,6 @@
 
 import AppKit
 import SwiftUI
-import SkyLightWindow
 import Defaults
 import QuartzCore
 
@@ -36,10 +35,12 @@ final class LockScreenWeatherPanelManager {
     private var workspaceObservers: [NSObjectProtocol] = []
 
     private init() {
+        guard AppRuntimeEnvironment.supportsLockScreenWidgets else { return }
         registerScreenChangeObservers()
     }
 
     func show(with snapshot: LockScreenWeatherSnapshot) {
+        guard AppRuntimeEnvironment.supportsLockScreenWidgets else { return }
         render(snapshot: snapshot, makeVisible: true)
     }
 
@@ -59,6 +60,7 @@ final class LockScreenWeatherPanelManager {
     }
 
     private func render(snapshot: LockScreenWeatherSnapshot, makeVisible: Bool) {
+        guard AppRuntimeEnvironment.supportsLockScreenWidgets else { return }
         guard let screen = currentScreen() else { return }
         if !makeVisible, window == nil {
             return
@@ -110,7 +112,6 @@ final class LockScreenWeatherPanelManager {
 
         window = newWindow
         if !hasDelegated {
-            SkyLightOperator.shared.delegateWindow(newWindow)
             hasDelegated = true
         }
         return newWindow

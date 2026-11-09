@@ -1,0 +1,11 @@
+#!/bin/sh
+set -eu
+CONSOLE_UID=$(/usr/bin/stat -f %u /dev/console)
+case "$CONSOLE_UID" in ""|*[!0-9]*) exit 1;; esac
+[ "$CONSOLE_UID" -gt 0 ]
+/usr/sbin/chown root:wheel /Library/PrivilegedHelperTools/local.bsstoll.fan-helper /Library/LaunchDaemons/local.bsstoll.fan-helper.plist
+/bin/chmod 755 /Library/PrivilegedHelperTools/local.bsstoll.fan-helper
+/bin/chmod 644 /Library/LaunchDaemons/local.bsstoll.fan-helper.plist
+/usr/libexec/PlistBuddy -c "Set :ProgramArguments:2 $CONSOLE_UID" /Library/LaunchDaemons/local.bsstoll.fan-helper.plist
+/bin/launchctl bootout system/local.bsstoll.fan-helper 2>/dev/null || true
+/bin/launchctl bootstrap system /Library/LaunchDaemons/local.bsstoll.fan-helper.plist

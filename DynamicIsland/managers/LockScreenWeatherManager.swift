@@ -34,6 +34,7 @@ final class LockScreenWeatherManager: ObservableObject {
     private var cancellables = Set<AnyCancellable>()
 
     private init() {
+        guard AppRuntimeEnvironment.supportsLockScreenWidgets else { return }
         observeAccessoryChanges()
         Task { @MainActor [weak self] in
             guard let self else { return }
@@ -43,10 +44,12 @@ final class LockScreenWeatherManager: ObservableObject {
     }
 
     func prepareLocationAccess() {
+        guard AppRuntimeEnvironment.supportsLockScreenWidgets else { return }
         locationProvider.prepareAuthorization()
     }
 
     func showWeatherWidget() {
+        guard AppRuntimeEnvironment.supportsLockScreenWidgets else { return }
         guard Defaults[.enableLockScreenWeatherWidget] else {
             LockScreenWeatherPanelManager.shared.hide()
             return
@@ -90,6 +93,7 @@ final class LockScreenWeatherManager: ObservableObject {
 
     @discardableResult
     func refresh(force: Bool = false) async -> LockScreenWeatherSnapshot? {
+        guard AppRuntimeEnvironment.supportsLockScreenWidgets else { return nil }
         NSLog("LockScreenWeatherManager: refresh requested (force=%@)", force ? "true" : "false")
         let interval = Defaults[.lockScreenWeatherRefreshInterval]
         if !force, let lastFetchDate, Date().timeIntervalSince(lastFetchDate) < interval {

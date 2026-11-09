@@ -18,7 +18,6 @@
 
 import SwiftUI
 import AppKit
-import SkyLightWindow
 import Defaults
 import QuartzCore
 import Combine
@@ -47,6 +46,7 @@ class LockScreenPanelManager {
     private var cancellables = Set<AnyCancellable>()
 
     private init() {
+        guard AppRuntimeEnvironment.supportsLockScreenWidgets else { return }
         print("[\(timestamp())] LockScreenPanelManager: initialized")
         registerScreenChangeObservers()
         observeDefaultChanges()
@@ -99,6 +99,7 @@ class LockScreenPanelManager {
     }
 
     func showPanel() {
+        guard AppRuntimeEnvironment.supportsLockScreenWidgets else { return }
         print("[\(timestamp())] LockScreenPanelManager: showPanel")
 
         guard Defaults[.enableLockScreenMediaWidget] else {
@@ -166,7 +167,6 @@ class LockScreenPanelManager {
         }
 
         if !hasDelegated {
-            SkyLightOperator.shared.delegateWindow(window)
             hasDelegated = true
         }
 

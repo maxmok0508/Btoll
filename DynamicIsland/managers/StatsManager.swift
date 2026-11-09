@@ -391,6 +391,7 @@ class StatsManager: ObservableObject {
     @Published private(set) var cpuCoreUsage: [CPUCoreUsage] = []
     @Published private(set) var cpuUptime: TimeInterval = 0
     @Published private(set) var topCPUProcesses: [ProcessStats] = []
+    @Published private(set) var allProcesses: [ProcessStats] = []
     @Published private(set) var cpuTemperature: CPUTemperatureMetrics = CPUTemperatureMetrics(celsius: nil)
     @Published private(set) var cpuFrequency: CPUFrequencyMetrics?
     @Published private(set) var memoryBreakdown: MemoryBreakdown = .zero
@@ -455,7 +456,7 @@ class StatsManager: ObservableObject {
     // Per-process monitoring cache (updated via ps sampling)
     private var cachedProcessStats: [ProcessStats] = []
     private var lastProcessStatsUpdate: Date = .distantPast
-    private let processStatsUpdateInterval: TimeInterval = 2.0
+    private let processStatsUpdateInterval: TimeInterval = 3.0
     private let maxProcessEntries: Int = 20
     private var isProcessRefreshInFlight = false
     private let gpuCollector = GPUInfoCollector()
@@ -773,7 +774,7 @@ class StatsManager: ObservableObject {
         previousTimestamp = currentTime
         networkInterfaces = collectNetworkInterfaces(deltaTime: timeInterval)
         diskDevices = collectDiskDevices()
-        refreshProcessStatsIfNeeded(force: true)
+        refreshProcessStatsIfNeeded()
     }
     
     private func updateHistory(value: Double, history: inout [Double]) {
@@ -1413,20 +1414,20 @@ class StatsManager: ObservableObject {
     @MainActor
     func getProcessesRankedByCPU() -> [ProcessStats] {
         refreshProcessStatsIfNeeded()
-        return cachedProcessStats.sorted { $0.cpuUsage > $1.cpuUsage }
+        return Array(cachedProcessStats.sorted { $0.cpuUsage > $1.cpuUsage }.prefix(maxProcessEntries))
     }
     
     @MainActor
     func getProcessesRankedByMemory() -> [ProcessStats] {
         refreshProcessStatsIfNeeded()
-        return cachedProcessStats.sorted { $0.memoryUsage > $1.memoryUsage }
+        return Array(cachedProcessStats.sorted { $0.memoryUsage > $1.memoryUsage }.prefix(maxProcessEntries))
     }
     
     @MainActor
     func getProcessesRankedByGPU() -> [ProcessStats] {
         // For now, rank by CPU usage as GPU per-process stats are complex to obtain
         refreshProcessStatsIfNeeded()
-        return cachedProcessStats.sorted { $0.cpuUsage > $1.cpuUsage }
+        return Array(cachedProcessStats.sorted { $0.cpuUsage > $1.cpuUsage }.prefix(maxProcessEntries))
     }
     
     @MainActor
@@ -1439,12 +1440,13 @@ class StatsManager: ObservableObject {
 
         Task.detached { [weak self] in
             guard let self else { return }
-            let processes = StatsManager.collectTopProcesses(limit: self.maxProcessEntries)
+            let processes = StatsManager.collectTopProcesses(limit: Int.max)
             await MainActor.run {
                 self.cachedProcessStats = processes
                 self.lastProcessStatsUpdate = Date()
                 self.isProcessRefreshInFlight = false
-                self.topCPUProcesses = processes
+                self.allProcesses = processes
+                self.topCPUProcesses = Array(processes.prefix(self.maxProcessEntries))
             }
         }
     }
@@ -1495,8 +1497,9 @@ class StatsManager: ObservableObject {
                 pid: pid,
                 name: displayName,
                 cpuUsage: cpuUsage,
-                memoryUsage: memoryUsage,
-                icon: icon
+                memoryUsage: memoryUsage ?? 0,
+                icon: icon,
+                memoryAvailable: memoryUsage != nil
             )
 
             results.append(process)
@@ -1532,13 +1535,18 @@ class StatsManager: ObservableObject {
             let name = app.localizedName?.trimmingCharacters(in: .whitespacesAndNewlines)
             return ((name?.isEmpty ?? true) ? fallbackCommand : name!, app.icon)
         }
-        return (fallbackCommand, nil)
+        if let range=fallbackCommand.range(of:".app/") {
+            let path=String(fallbackCommand[..<range.upperBound].dropLast())
+            let url=URL(fileURLWithPath:path)
+            return (url.deletingPathExtension().lastPathComponent,NSWorkspace.shared.icon(forFile:path))
+        }
+        return (URL(fileURLWithPath:fallbackCommand).lastPathComponent, nil)
     }
 
-    private static func residentMemory(for pid: pid_t) -> UInt64 {
+    private static func residentMemory(for pid: pid_t) -> UInt64? {
         var taskInfo = proc_taskinfo()
         let result = proc_pidinfo(pid, PROC_PIDTASKINFO, 0, &taskInfo, Int32(MemoryLayout<proc_taskinfo>.size))
-        guard result == MemoryLayout<proc_taskinfo>.size else { return 0 }
+        guard result == MemoryLayout<proc_taskinfo>.size else { return nil }
         return taskInfo.pti_resident_size
     }
 }

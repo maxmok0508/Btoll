@@ -34,6 +34,7 @@ final class LockScreenDisplayContextProvider {
     private var workspaceObservers: [NSObjectProtocol] = []
 
     private init() {
+        guard AppRuntimeEnvironment.supportsLockScreenWidgets else { return }
         refresh(reason: "init")
         registerObservers()
     }

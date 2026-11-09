@@ -28,8 +28,10 @@ struct ProcessStats: Identifiable, Hashable {
     let cpuUsage: Double
     let memoryUsage: UInt64 // in bytes
     let icon: NSImage?
+    var memoryAvailable: Bool = true
     
     var memoryUsageString: String {
+        guard memoryAvailable else { return "—" }
         let formatter = ByteCountFormatter()
         formatter.allowedUnits = [.useMB, .useGB]
         formatter.countStyle = .memory

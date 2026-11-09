@@ -18,7 +18,6 @@
 
 import AppKit
 import Defaults
-import SkyLightWindow
 import SwiftUI
 import QuartzCore
 
@@ -48,6 +47,7 @@ class LockScreenLiveActivityWindowManager {
     }
 
     private init() {
+        guard AppRuntimeEnvironment.supportsLockScreenWidgets else { return }
         registerScreenChangeObservers()
     }
 
@@ -194,7 +194,6 @@ class LockScreenLiveActivityWindowManager {
         window.displayIfNeeded()
 
         if !hasDelegated {
-            SkyLightOperator.shared.delegateWindow(window)
             hasDelegated = true
         }
 
@@ -205,6 +204,7 @@ class LockScreenLiveActivityWindowManager {
     }
 
     func showLocked() {
+        guard AppRuntimeEnvironment.supportsLockScreenWidgets else { return }
         hideTask?.cancel()
         guard let context = lockContext() else { return }
 
@@ -229,6 +229,7 @@ class LockScreenLiveActivityWindowManager {
     }
 
     func showUnlockAndScheduleHide() {
+        guard AppRuntimeEnvironment.supportsLockScreenWidgets else { return }
         hideTask?.cancel()
         guard let context = lockContext() else { return }
 

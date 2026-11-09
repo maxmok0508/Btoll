@@ -19,7 +19,6 @@
 #if os(macOS)
 import AppKit
 import SwiftUI
-import SkyLightWindow
 import QuartzCore
 import Defaults
 
@@ -143,8 +142,6 @@ final class CustomOSDWindowManager {
         window.alphaValue = 0
         
         // Delegate to SkyLight for proper rendering
-        SkyLightOperator.shared.delegateWindow(window)
-        
         return OSDWindow(nsWindow: window, hostingView: hostingView, type: type)
     }
     

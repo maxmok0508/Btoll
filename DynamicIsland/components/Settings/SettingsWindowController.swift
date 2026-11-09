@@ -54,7 +54,7 @@ class SettingsWindowController: NSWindowController {
     private func setupWindow() {
         guard let window = window else { return }
         
-        window.title = "Atoll Settings"
+        window.title = "Btoll Settings"
         window.titlebarAppearsTransparent = false
         window.titleVisibility = .visible
         window.toolbarStyle = .unified
@@ -70,6 +70,7 @@ class SettingsWindowController: NSWindowController {
         
         // Configure window to be a standard document-style window
         window.isRestorable = true
+        window.isReleasedWhenClosed = false
         window.identifier = NSUserInterfaceItemIdentifier("DynamicIslandSettingsWindow")
         
         // Create the SwiftUI content
@@ -84,12 +85,15 @@ class SettingsWindowController: NSWindowController {
     }
     
     func showWindow() {
+        NSApp.setActivationPolicy(.regular)
+        NSApp.unhide(nil)
+        window?.deminiaturize(nil)
         // Ensure window exists
         _ = window
 
         // Reassert regular window semantics in case any prior state mutated this window.
         window?.level = .normal
-        window?.collectionBehavior = [.managed, .participatesInCycle]
+        window?.collectionBehavior = [.moveToActiveSpace, .participatesInCycle]
         
         // If window is already visible, bring it to front properly
         if window?.isVisible == true {

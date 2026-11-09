@@ -53,7 +53,20 @@ final class CPUSensorCollector {
         }
     }
 
+    private static let portableCoreKeys: [String:[String]] = {
+        guard let url=Bundle.main.resourceURL?.appendingPathComponent("PortableBridge/sensor-mappings.json"),
+              let data=try? Data(contentsOf:url),
+              let mappings=(try? JSONSerialization.jsonObject(with:data)) as? [String:[[String:String]]] else { return [:] }
+        return mappings.mapValues { $0.filter { $0["group"] == "CPU" }.compactMap { $0["key"] } }
+    }()
+
     func readTemperature() -> CPUTemperatureMetrics {
+        if let name=hardware.cpuName, name.hasPrefix("Apple M") {
+            let generation=name.lowercased().split(separator:" ").first { $0.hasPrefix("m") && !$0.dropFirst().isEmpty && $0.dropFirst().allSatisfy { $0.isNumber } }.map(String.init) ?? ""
+            let keys=Self.portableCoreKeys[generation] ?? []
+            let values=keys.compactMap { SMC.shared.getValue($0) }.filter { $0.isFinite && $0 > 0 && $0 < 130 }
+            return CPUTemperatureMetrics(celsius:values.isEmpty ? nil : values.reduce(0,+)/Double(values.count))
+        }
         let platform = hardware.platform
         if let value = primaryTemperatureKeyCandidates.compactMap({ SMC.shared.getValue($0) }).first(where: { $0 < 110 }) {
             return CPUTemperatureMetrics(celsius: value)

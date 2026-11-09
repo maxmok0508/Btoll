@@ -20,7 +20,6 @@ import SwiftUI
 import Combine
 import Defaults
 import AppKit
-import SkyLightWindow
 import AtollExtensionKit
 
 @MainActor
@@ -201,8 +200,6 @@ private final class ExtensionLockScreenWidgetWindowPool {
         window.isMovable = false
 
         ScreenCaptureVisibilityManager.shared.register(window, scope: .entireInterface)
-        SkyLightOperator.shared.delegateWindow(window)
-
         let record = WindowRecord(window: window)
         windows[id] = record
         return window

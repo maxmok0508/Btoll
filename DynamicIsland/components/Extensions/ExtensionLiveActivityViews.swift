@@ -181,6 +181,8 @@ private func logExtensionDiagnostics(_ message: String) {
 }
 
 struct ExtensionNotchExperienceTabView: View {
+    @EnvironmentObject private var vm: DynamicIslandViewModel
+    @State private var scrollToken = UUID()
     let payload: ExtensionNotchExperiencePayload
 
     @Default(.enableExtensionNotchInteractiveWebViews) private var interactiveWebViewsEnabled
@@ -194,7 +196,11 @@ struct ExtensionNotchExperienceTabView: View {
 
     var body: some View {
         Group {
-            if let tabConfiguration {
+            if descriptor.bundleIdentifier == "local.codex.atoll-status" && descriptor.id == "codex-monitor" {
+                CodexDashboardView(onHorizontalHover: { vm.setScrollGestureSuppression($0, token: scrollToken) })
+            } else if descriptor.bundleIdentifier == "local.codex.atoll-status" && descriptor.id == "hardware-temperature" {
+                CodexDashboardView(temperatureOnly: true, onHorizontalHover: { vm.setScrollGestureSuppression($0, token: scrollToken) })
+            } else if let tabConfiguration {
                 ScrollView(.vertical, showsIndicators: false) {
                     VStack(alignment: .leading, spacing: 18) {
                         header(for: tabConfiguration)
@@ -230,7 +236,7 @@ struct ExtensionNotchExperienceTabView: View {
             }
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
-        .background(tabBackground)
+        .background(descriptor.bundleIdentifier == "local.codex.atoll-status" ? AnyView(Color.black) : AnyView(tabBackground))
         .clipShape(RoundedRectangle(cornerRadius: 22, style: .continuous))
     }
 
