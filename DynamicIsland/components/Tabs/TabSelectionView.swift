@@ -76,7 +76,7 @@ struct TabSelectionView: View {
 
         // Usage tab only shown when LLM usage feature is enabled
         if Defaults[.enableLLMUsageFeature] {
-            tabsArray.append(TabModel(label: "Usage", icon: "chart.bar.doc.horizontal", view: .llmUsage))
+            tabsArray.append(TabModel(label: BtollL10n.isEnglish ? "AI Limits" : "AI额度", icon: "chart.bar.doc.horizontal", view: .llmUsage))
         }
 
         if Defaults[.enableNotes] || (Defaults[.enableClipboardManager] && Defaults[.clipboardDisplayMode] == .separateTab) {

@@ -1,7 +1,8 @@
 import Foundation
 import os
 
-// Codex/ChatGPT rate-limit usage from chatgpt.com/backend-api/wham/usage; request+response shape per OpenUsage.
+// Prefer the official Codex app-server snapshot written by Btoll's local bridge.
+// The legacy web endpoint is used only when it supplies explicit window durations.
 struct CodexQuotaClient {
     private static let log = os.Logger(subsystem: "com.atoll.DynamicIsland", category: "CodexQuota")
     let session: URLSession
@@ -19,6 +20,12 @@ struct CodexQuotaClient {
         let usedPercent: Double
         let resetAt: Double?
         let resetAfterSeconds: Double?
+        let windowDurationMins: Int?
+    }
+
+    private struct BridgeDashboard: Decodable {
+        struct Quota: Decodable { let used: Double; let reset: Double?; let observed: Double }
+        let quota: Quota?
     }
 
     private struct RateLimit: Decodable {
@@ -32,6 +39,7 @@ struct CodexQuotaClient {
 
     // Never throws: any credential/network/parse failure yields (nil, nil).
     func fetchLimits() async -> (session: UsageLimit?, week: UsageLimit?) {
+        if let weekly = bridgeWeeklyLimit() { return (nil, weekly) }
         guard let creds = loadCredentials() else {
             Self.log.notice("no credentials: auth.json/Keychain missing or unparseable")
             return (nil, nil)
@@ -54,16 +62,13 @@ struct CodexQuotaClient {
             decoder.keyDecodingStrategy = .convertFromSnakeCase
             let now = Date()
             if let decoded = try? decoder.decode(UsageResponse.self, from: data) {
-                let sessionLimit = decoded.rateLimit?.primaryWindow.map { limit(from: $0, now: now) }
-                let weekLimit = decoded.rateLimit?.secondaryWindow.map { limit(from: $0, now: now) }
+                let windows = [decoded.rateLimit?.primaryWindow, decoded.rateLimit?.secondaryWindow].compactMap { $0 }
+                let sessionLimit = windows.first { $0.windowDurationMins == 300 }.map { limit(from: $0, now: now) }
+                let weekLimit = windows.first { $0.windowDurationMins == 10080 }.map { limit(from: $0, now: now) }
                 if sessionLimit != nil || weekLimit != nil { return (sessionLimit, weekLimit) }
             }
-            let sessionLimit = headerFallback(http, key: "x-codex-primary-used-percent")
-            let weekLimit = headerFallback(http, key: "x-codex-secondary-used-percent")
-            if sessionLimit == nil && weekLimit == nil {
-                Self.log.error("wham/usage 200 but no usage found — response shape may have changed (\(data.count) bytes)")
-            }
-            return (sessionLimit, weekLimit)
+            Self.log.error("wham/usage 200 but no identified quota windows (\(data.count) bytes)")
+            return (nil, nil)
         } catch {
             Self.log.error("wham/usage request errored: \(error.localizedDescription, privacy: .public)")
             return (nil, nil)
@@ -75,9 +80,15 @@ struct CodexQuotaClient {
         return UsageLimit(used: window.usedPercent, limit: 100, resetsAt: resets)
     }
 
-    private func headerFallback(_ http: HTTPURLResponse, key: String) -> UsageLimit? {
-        guard let raw = http.value(forHTTPHeaderField: key), let percent = Double(raw) else { return nil }
-        return UsageLimit(used: percent, limit: 100)
+    private func bridgeWeeklyLimit() -> UsageLimit? {
+        let url = FileManager.default.homeDirectoryForCurrentUser
+            .appendingPathComponent("Library/Application Support/AtollCodexBridge/dashboard.json")
+        guard let data = try? Data(contentsOf: url),
+              let quota = try? JSONDecoder().decode(BridgeDashboard.self, from: data).quota,
+              Date().timeIntervalSince1970 * 1000 - quota.observed < 5 * 60 * 1000,
+              (0...100).contains(quota.used) else { return nil }
+        return UsageLimit(used: quota.used, limit: 100,
+                          resetsAt: quota.reset.map { Date(timeIntervalSince1970: $0) })
     }
 
     // auth.json ($CODEX_HOME, ~/.codex, ~/.config/codex), then Keychain "Codex Auth" holding the same JSON payload.

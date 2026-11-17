@@ -11,14 +11,13 @@ struct CursorUsageProvider: UsageProvider {
     }
 
     func fetchSnapshot(now: Date) async throws -> UsageSnapshot {
-        let quota = await quotaClient.fetchLimits()
+        let billingLimit = await quotaClient.fetchBillingLimit()
         guard let cookie = CursorTokenStore.sessionCookie() else {
-            guard quota.session != nil || quota.week != nil else {
+            guard billingLimit != nil else {
                 throw UsageError.notConfigured("Cursor not signed in")
             }
             var snapshot = UsageSnapshot()
-            snapshot.sessionLimit = quota.session
-            snapshot.weekLimit = quota.week
+            snapshot.billingLimit = billingLimit
             snapshot.lastUpdated = now
             return snapshot
         }
@@ -31,8 +30,7 @@ struct CursorUsageProvider: UsageProvider {
             throw UsageError.notConfigured("Cursor usage request failed")
         }
         var snapshot = try decode(data, now: now)
-        snapshot.sessionLimit = snapshot.sessionLimit ?? quota.session
-        snapshot.weekLimit = snapshot.weekLimit ?? quota.week
+        snapshot.billingLimit = billingLimit
         return snapshot
     }
 
@@ -68,8 +66,7 @@ struct CursorUsageProvider: UsageProvider {
         snapshot.models = models.sorted { $0.model < $1.model }
         snapshot.week = week
         // Cursor API provides no per-day breakdown, only cumulative totals;
-        // mirror week data to today since that's the only granularity available
-        snapshot.today = week
+        // Do not represent billing-period totals as today's or this week's usage.
         return snapshot
     }
 }

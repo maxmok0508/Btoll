@@ -2,19 +2,23 @@ import Foundation
 import Defaults
 
 enum ProviderID: String, CaseIterable, Identifiable {
-    case claude, codex, cursor
+    case grok, antigravity, codex, claude, cursor
     var id: String { rawValue }
     var displayName: String {
         switch self {
+        case .grok: return "Grok Bot"
         case .claude: return "Claude"
         case .codex: return "Codex"
+        case .antigravity: return "Gemini · Antigravity"
         case .cursor: return "Cursor"
         }
     }
     var enabledKey: Defaults.Key<Bool> {
         switch self {
+        case .grok: return .enableGrokProvider
         case .claude: return .enableClaudeProvider
         case .codex: return .enableCodexProvider
+        case .antigravity: return .enableAntigravityProvider
         case .cursor: return .enableCursorProvider
         }
     }
@@ -38,7 +42,7 @@ struct UsageLimit: Equatable {
     let used: Double
     let limit: Double
     var resetsAt: Date? = nil
-    var fraction: Double { limit > 0 ? min(used / limit, 1) : 0 }
+    var fraction: Double { limit > 0 ? max(0, min(used / limit, 1)) : 0 }
 }
 
 struct UsageSnapshot: Equatable {
@@ -47,6 +51,7 @@ struct UsageSnapshot: Equatable {
     var week: UsageTotals = .init()
     var sessionLimit: UsageLimit? = nil // 5h window quota
     var weekLimit: UsageLimit? = nil // 7d window quota
+    var billingLimit: UsageLimit? = nil // billing cycle, never a weekly quota
     var models: [ModelUsage] = []
     var lastUpdated: Date = .distantPast
 }

@@ -2,30 +2,22 @@ import Foundation
 
 struct ClaudeUsageProvider: UsageProvider {
     let id: ProviderID = .claude
-    let root: URL
     let quotaClient: ClaudeQuotaClient
 
-    init(root: URL = FileManager.default.homeDirectoryForCurrentUser.appendingPathComponent(".claude/projects"), quotaClient: ClaudeQuotaClient = ClaudeQuotaClient()) {
-        self.root = root
+    init(quotaClient: ClaudeQuotaClient = ClaudeQuotaClient()) {
         self.quotaClient = quotaClient
     }
 
     func fetchSnapshot(now: Date) async throws -> UsageSnapshot {
-        guard FileManager.default.fileExists(atPath: root.path) else {
-            throw UsageError.notFound("No ~/.claude/projects — Claude Code not detected")
-        }
-        let files = jsonlFiles(under: root)
-        guard !files.isEmpty else { throw UsageError.notFound("No Claude usage logs found") }
-        var snapshot = JSONLUsageParser.aggregate(files: files, now: now)
         let quota = await quotaClient.fetchLimits()
+        guard quota.session != nil || quota.week != nil else {
+            throw UsageError.notConfigured("Claude Code is not signed in or its quota is unavailable")
+        }
+        var snapshot = UsageSnapshot()
         snapshot.sessionLimit = quota.session
         snapshot.weekLimit = quota.week
+        snapshot.lastUpdated = now
         return snapshot
-    }
-
-    private func jsonlFiles(under dir: URL) -> [URL] {
-        guard let en = FileManager.default.enumerator(at: dir, includingPropertiesForKeys: nil) else { return [] }
-        return en.compactMap { $0 as? URL }.filter { $0.pathExtension == "jsonl" }
     }
 }
 

@@ -46,6 +46,8 @@ def main():
     shutil.rmtree(test_home)
     run('xcrun','swiftc','-parse-as-library',ROOT/'DynamicIsland/managers/BtollSystemSampler.swift',ROOT/'portable/tests/system/main.swift','-o',WORK/'system-test')
     run(WORK/'system-test')
+    run('xcrun','swiftc','-parse-as-library',ROOT/'DynamicIsland/managers/LLMUsage/GrokBotUsageProvider.swift',ROOT/'portable/tests/grok-quota/main.swift','-o',WORK/'grok-quota-test')
+    run(WORK/'grok-quota-test')
     run('cmake','-S',ROOT/'portable/vendor/mediaremote-adapter','-B',WORK/'mediaremote-build','-DCMAKE_BUILD_TYPE=Release','-DCMAKE_OSX_DEPLOYMENT_TARGET=14.6')
     run('cmake','--build',WORK/'mediaremote-build','--target','MediaRemoteAdapter','-j','4')
     if args.app:app=args.app.resolve()

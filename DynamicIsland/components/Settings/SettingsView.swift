@@ -7017,6 +7017,11 @@ struct StatsSettings: View {
 
             if enableLLMUsageFeature {
                 Section {
+                    Defaults.Toggle(key: .enableGrokProvider) {
+                        Text("Grok Bot")
+                    }
+                    .settingsHighlight(id: highlightID("Grok Provider"))
+
                     Defaults.Toggle(key: .enableClaudeProvider) {
                         Text("Claude")
                     }
@@ -7026,6 +7031,11 @@ struct StatsSettings: View {
                         Text("Codex")
                     }
                     .settingsHighlight(id: highlightID("Codex Provider"))
+
+                    Defaults.Toggle(key: .enableAntigravityProvider) {
+                        Text("Gemini · Antigravity")
+                    }
+                    .settingsHighlight(id: highlightID("Antigravity Provider"))
 
                     Defaults.Toggle(key: .enableCursorProvider) {
                         Text("Cursor")

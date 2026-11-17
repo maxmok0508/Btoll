@@ -14,9 +14,9 @@ struct CursorQuotaClient {
         let billingCycleEnd: Double?
     }
 
-    // Never throws: any credential/network/parse failure yields (nil, nil). Cursor has no 5h session window.
-    func fetchLimits() async -> (session: UsageLimit?, week: UsageLimit?) {
-        guard let token = CursorTokenStore.accessToken() else { return (nil, nil) }
+    // The response is for a billing period, which must not be presented as a weekly limit.
+    func fetchBillingLimit() async -> UsageLimit? {
+        guard let token = CursorTokenStore.accessToken() else { return nil }
         var request = URLRequest(url: URL(string: "https://api2.cursor.sh/aiserver.v1.DashboardService/GetCurrentPeriodUsage")!)
         request.httpMethod = "POST"
         request.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
@@ -24,13 +24,13 @@ struct CursorQuotaClient {
         request.httpBody = Data("{}".utf8)
         do {
             let (data, response) = try await session.data(for: request)
-            guard let http = response as? HTTPURLResponse, (200..<300).contains(http.statusCode) else { return (nil, nil) }
+            guard let http = response as? HTTPURLResponse, (200..<300).contains(http.statusCode) else { return nil }
             let decoded = try JSONDecoder().decode(UsageResponse.self, from: data)
-            guard let percent = decoded.planUsage?.totalPercentUsed else { return (nil, nil) }
+            guard let percent = decoded.planUsage?.totalPercentUsed else { return nil }
             let resets = decoded.billingCycleEnd.map { Date(timeIntervalSince1970: $0 / 1000) }
-            return (nil, UsageLimit(used: percent, limit: 100, resetsAt: resets))
+            return UsageLimit(used: percent, limit: 100, resetsAt: resets)
         } catch {
-            return (nil, nil)
+            return nil
         }
     }
 }
