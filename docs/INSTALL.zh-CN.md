@@ -1,10 +1,12 @@
 # Btoll 安装与卸载
 
-适用 Apple Silicon（M 系列）、macOS 14.6 或更新版本。打开 Btoll-1.1.0-arm64.pkg，由系统安装器完成应用和独立风扇服务安装，再打开“应用程序”中的 Btoll。管理员密码只在 macOS 系统窗口输入。
+适用 Apple Silicon（M 系列）、macOS 14.6 或更新版本。打开 Btoll-1.1.1-arm64.pkg，由系统安装器完成应用和独立风扇服务安装，再打开“应用程序”中的 Btoll。管理员密码只在 macOS 系统窗口输入。
 
 包内应用采用临时签名，安装包未签名且未经 Apple 公证。如果系统拦截，在“隐私与安全性”核对后选择“仍要打开”。不要关闭 Gatekeeper。
 
 Codex 面板读取当前用户自己的官方 Codex 登录、配额与本机会话。需要先安装并登录官方 Codex；活动数据以接口返回为准，无数据时不会编造。包内没有打包者的登录、聊天或监控快照。
+
+“AI 额度”页在“设置 → 性能”中启用。Grok Bot 周额度取自当前登录账号的本地缓存；Gemini 模型池需要另行安装、登录[官方 Antigravity CLI](https://antigravity.google/docs/cli/tutorial/)，Btoll 只运行其 `/usage` 查询；Codex 使用本机监控读数。安装包不含 Antigravity CLI 或任何 AI 登录凭据。缓存过期或来源不可用时不会把旧值当作实时额度。
 
 首次打开会在当前用户目录部署监控运行时与 LaunchAgent，使用内置 Node，不依赖 Homebrew、Python 或目标机器上的 Xcode。现有运行数据、设置和撤销授权保留。系统询问音乐、蓝牙等权限时，按需要选择。
 

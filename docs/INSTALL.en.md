@@ -1,10 +1,12 @@
 # Installing and removing Btoll
 
-Supports Apple Silicon Macs running macOS 14.6 or later. Open `Btoll-1.1.0-arm64.pkg` and let the macOS installer install the app and independent fan service. Open Btoll in Applications. Enter administrator credentials only in the system installer.
+Supports Apple Silicon Macs running macOS 14.6 or later. Open `Btoll-1.1.1-arm64.pkg` and let the macOS installer install the app and independent fan service. Open Btoll in Applications. Enter administrator credentials only in the system installer.
 
 The app is ad-hoc signed. The installer is unsigned and has not been notarized by Apple. If blocked, review it in Privacy & Security and choose Open Anyway. Do not disable Gatekeeper.
 
 The Codex panel uses the current user's official Codex login, quota and local session metadata. Install and sign in to official Codex first. Missing data stays unavailable. Developer credentials, chats and monitoring snapshots are not included.
+
+Enable the **AI Limits** page in **Settings → Stats**. Grok Bot weekly quota comes from the signed-in account's local cache. The Gemini model pool requires the separately installed and signed-in [official Antigravity CLI](https://antigravity.google/docs/cli/tutorial/); Btoll only runs its `/usage` query. Codex uses the local monitor reading. The installer contains no Antigravity CLI or AI credentials. Expired or unavailable readings are not shown as live quota.
 
 First launch deploys a per-user monitor and LaunchAgent with the bundled Node runtime. The destination Mac does not need Homebrew, Python or Xcode. Existing data, preferences and revoked permissions are preserved. Choose music and Bluetooth permissions according to your needs.
 

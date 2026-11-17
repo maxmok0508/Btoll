@@ -113,7 +113,7 @@ export function readAccount() {
         if(gotRate&&gotUsage){finish(false,rateResult);return}
       }
     });
-    send({id:1,method:'initialize',params:{clientInfo:{name:'atoll_codex_monitor',title:'Btoll Codex Monitor',version:'1.1.0'},capabilities:{experimentalApi:true}}});
+    send({id:1,method:'initialize',params:{clientInfo:{name:'atoll_codex_monitor',title:'Btoll Codex Monitor',version:'1.1.1'},capabilities:{experimentalApi:true}}});
   });
 }
 

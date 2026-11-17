@@ -7,7 +7,7 @@ An independent open-source extension of [Atoll](https://github.com/Ebullioscopic
 
 ## Installation
 
-Download `Btoll-1.1.0-arm64.pkg` from this repository's **Releases**. Supports **Apple Silicon Macs running macOS 14.6 or later**. The installer includes the app, independent fan service, Node runtime and native sensor readers. Homebrew, Python and Xcode are not required on the destination Mac.
+Download `Btoll-1.1.1-arm64.pkg` from this repository's **Releases**. Supports **Apple Silicon Macs running macOS 14.6 or later**. The installer includes the app, independent fan service, Node runtime and native sensor readers. Homebrew, Python and Xcode are not required on the destination Mac.
 
 Open **Btoll** in Applications. Codex data belongs to the current Mac's signed-in Codex account and local sessions. No developer credentials or chat history are included. First launch installs a per-user monitor with live-activity and notch-content access only; existing preferences and revoked permissions are preserved.
 
@@ -19,6 +19,7 @@ Choose **Settings → General → 语言 / Language → English, 简体中文 or
 
 ## Features
 
+- The **AI Limits** page shows weekly remaining quota, reset countdown and reading time for Grok Bot, Antigravity's Gemini model pool and Codex. Grok Bot uses the current account's local cache; Gemini requires a separately installed and signed-in [official Antigravity CLI](https://antigravity.google/docs/cli/tutorial/); Codex uses the local monitor reading. Stale or unavailable data is shown as unavailable.
 - Codex quota, reset time and reset credits, recent sessions and status, and the personal activity grid.
 - 28 original Grok Bot animations. Follow actual Codex processing, tool work, responding, input waits and completion; multiple clips connect within each state. Individual selection and Lottie imports are also available.
 - CPU, GPU and memory rings with three horizontal pages and expandable details.

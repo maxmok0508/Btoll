@@ -5,7 +5,7 @@ from pathlib import Path
 ROOT=Path(__file__).resolve().parents[1]
 WORK=ROOT/'.build.noindex'
 OUT=ROOT/'dist'
-VERSION='1.1.0'
+VERSION='1.1.1'
 def run(*args, **kwargs):
     print('+', ' '.join(map(str,args)),flush=True)
     subprocess.run(list(map(str,args)),check=True,**kwargs)
@@ -64,7 +64,7 @@ def main():
     helper.chmod(0o755);sign(helper)
     copy(ROOT/'portable/fan-service/local.bsstoll.fan-helper.plist',fanroot/'Library/LaunchDaemons/local.bsstoll.fan-helper.plist')
     scripts=ROOT/'portable/fan-service/pkg-scripts'
-    run('pkgbuild','--root',fanroot,'--scripts',scripts,'--identifier','local.bsstoll.fan-service','--version','1.1.0','--install-location','/',WORK/'bsstoll-fan-service.pkg')
+    run('pkgbuild','--root',fanroot,'--scripts',scripts,'--identifier','local.bsstoll.fan-service','--version',VERSION,'--install-location','/',WORK/'bsstoll-fan-service.pkg')
     copy(fanroot,payload)
     target=payload/'Applications/Btoll.app';copy(app,target)
     framework=target/'Contents/Resources/MediaRemoteAdapter.framework'
@@ -76,7 +76,7 @@ def main():
     info_path=target/'Contents/Info.plist'
     release_info=plistlib.loads(info_path.read_bytes())
     release_info['CFBundleShortVersionString']=VERSION
-    release_info['CFBundleVersion']='1100'
+    release_info['CFBundleVersion']='1101'
     info_path.write_bytes(plistlib.dumps(release_info))
     # Validate every Mach-O, including prebuilt resources, before creating an installer.
     for binary in target.rglob('*'):

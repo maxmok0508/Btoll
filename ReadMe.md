@@ -7,7 +7,7 @@
 
 ## 安装
 
-在本仓库 **Releases** 下载 `Btoll-1.1.0-arm64.pkg`。适用于 **Apple Silicon（M 系列），macOS 14.6 或更新版本**。安装包包含应用、独立风扇服务、Node 运行时和原生温度读取器；目标 Mac 无需 Homebrew、Python 或 Xcode。
+在本仓库 **Releases** 下载 `Btoll-1.1.1-arm64.pkg`。适用于 **Apple Silicon（M 系列），macOS 14.6 或更新版本**。安装包包含应用、独立风扇服务、Node 运行时和原生温度读取器；目标 Mac 无需 Homebrew、Python 或 Xcode。
 
 安装后在“应用程序”打开 **Btoll**。Codex 数据来自这台 Mac 自己的 Codex 登录与会话；不包含作者的账号、密钥或聊天记录。首次启动会安装当前用户的本地监控扩展，并仅授权实时活动和刘海内容；已有用户的设置与撤销授权会保留。
 
@@ -19,6 +19,7 @@
 
 ## 功能
 
+- 在 **AI 额度** 页并排显示 Grok Bot、Antigravity Gemini 模型池和 Codex 的周额度剩余、重置倒计时与读数时间。Grok Bot 使用当前账号的本地缓存；Gemini 需要另行安装并登录 [官方 Antigravity CLI](https://antigravity.google/docs/cli/tutorial/)；Codex 使用本机监控读数。数据过期或不可读取时显示不可用。
 - Codex 配额、重置时间与重置卡、最近会话和状态、个人活动方格图。
 - 内置 28 组 Grok Bot 原动画，默认跟随 Codex 的处理、工作、响应、等待输入与完成状态切换；每种状态内连续衔接多个动作，支持单独选择及 Lottie 导入。
 - CPU、GPU、内存环形进度，三页横向切换及详细性能数据。
